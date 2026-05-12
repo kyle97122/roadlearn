@@ -222,6 +222,8 @@ const Repeat     = ({size,className}) => <Icon size={size} className={className}
 // ── Stockage ──────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "roadlearn_v2";
 const GOOGLE_CLIENT_ID = "66156942542-15ia2unhu3o9bnvn7v5q88c6k1nc3kd1.apps.googleusercontent.com";
+// ⬇️ Remplace par l'URL de ton Worker Cloudflare une fois déployé
+const WORKER_URL = "https://roadlearn-proxy.REMPLACE_PAR_TON_COMPTE.workers.dev";
 
 // ── Traductions Google Sign-In ─────────────────────────────────────────────────
 const L_GOOGLE = {
@@ -1436,7 +1438,7 @@ function RoadLearn() {
       if (typeof google === 'undefined' || !google.accounts) return;
       tokenClientRef.current = google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
-        scope: 'profile email https://www.googleapis.com/auth/generative-language.peruserquota',
+        scope: 'profile email',
         callback: (resp) => {
           if (resp.error) return;
           setGoogleToken(resp.access_token);
@@ -1574,15 +1576,13 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
         });
         if (resp.ok) { const data = await resp.json(); text = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; }
       } else if (googleToken) {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
+        const resp = await fetch(WORKER_URL, {
           method:"POST",
           headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${googleToken}` },
           body: JSON.stringify({ contents:[{ parts:[{ text: buildLessonPrompt(lv.name, rm.name, lang) }] }], generationConfig:{ maxOutputTokens:700 } }),
         });
-        const dbg = await resp.json();
-        console.log("[Gemini OAuth]", resp.status, JSON.stringify(dbg).slice(0,300));
-        if (resp.ok) { text = dbg.candidates?.[0]?.content?.parts?.[0]?.text || ""; }
-        else { setError(`Gemini ${resp.status}: ${dbg?.error?.message||JSON.stringify(dbg).slice(0,120)}`); setLoading(false); return; }
+        if (resp.ok) { const data = await resp.json(); text = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; }
+        else { const err = await resp.json().catch(()=>({})); setError(`Erreur: ${err?.error?.message || resp.status}`); setLoading(false); return; }
       } else {
         const resp = await fetch("https://api.anthropic.com/v1/messages", {
           method:"POST",
