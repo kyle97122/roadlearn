@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Husky pre-push hook - Prevents pushing unstable code upstream
+# Runs the full validation pipeline for any branch push.
+
+set -e
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║             PRE-PUSH VALIDATION - AUTONOMOUS SYSTEM            ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+
+echo "🔍 Running full validation: lint, typecheck, build, test"
+
+npm run check
+
+if npm run build; then
+  echo "✅ Build verified"
+else
+  echo "❌ Build verification failed"
+  exit 1
+fi
+
+echo ""
+echo "🧪 Running test suite"
+if npm run test; then
+  echo "✅ Tests passed"
+else
+  echo "⚠️ Tests failed or no tests configured"
+  echo "⚠ Push blocked until test suite is stable"
+  exit 1
+fi
+
+echo ""
+echo "🔐 Checking for dangerous patterns in updated files"
+UPDATED_FILES=$(git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx|json)$' || true)
+if [ -n "$UPDATED_FILES" ]; then
+  if grep -E "password|api_key|secret|eval|dangerouslySetInnerHTML" $UPDATED_FILES 2>/dev/null | grep -v node_modules; then
+    echo "⚠️  Sensitive or dangerous patterns detected"
+    exit 1
+  fi
+fi
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║ PRE-PUSH VALIDATION COMPLETE                                   ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "✅ Push allowed"
+
+echo ""
+exit 0

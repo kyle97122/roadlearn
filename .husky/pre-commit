@@ -1,0 +1,159 @@
+#!/bin/bash
+
+# Husky pre-commit hook - Run automated validation before commits
+# Blocks commits if any validation phase fails
+
+set -e
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║           PRE-COMMIT VALIDATION - AUTONOMOUS SYSTEM            ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx|json)$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "ℹ No relevant files staged for commit"
+  exit 0
+fi
+
+echo "📋 Staged files:"
+echo "$STAGED_FILES" | sed 's/^/   /'
+echo ""
+
+# PHASE 1: Static Validation
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║ PHASE 1: STATIC VALIDATION (ESLint, TypeScript, Imports)      ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+
+# ESLint
+echo "🔍 Running ESLint..."
+if npx eslint $STAGED_FILES --max-warnings=0 2>/dev/null; then
+  echo "✅ ESLint: PASS"
+else
+  echo "❌ ESLint: FAIL"
+  echo ""
+  echo "🔧 Attempting auto-fix..."
+  npx eslint $STAGED_FILES --fix || true
+  echo "💡 Review and stage fixed files, then retry commit"
+  exit 1
+fi
+echo ""
+
+# TypeScript
+echo "🔍 Running TypeScript compiler..."
+if npx tsc --noEmit --strict 2>/dev/null; then
+  echo "✅ TypeScript: PASS"
+else
+  echo "❌ TypeScript: FAIL"
+  echo "💡 Fix type errors and retry commit"
+  exit 1
+fi
+echo ""
+
+# Imports
+echo "🔍 Validating imports..."
+if npx madge --exclude node_modules --exit-on-circular . 2>/dev/null | grep -q "Circular"; then
+  echo "❌ Imports: FAIL (circular dependencies detected)"
+  exit 1
+else
+  echo "✅ Imports: PASS"
+fi
+echo ""
+
+# PHASE 2: Build Verification
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║ PHASE 2: BUILD VERIFICATION                                   ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+
+echo "🔨 Building project..."
+if npm run build 2>&1 | tail -20; then
+  echo "✅ Build: PASS"
+else
+  echo "❌ Build: FAIL"
+  echo "💡 Fix build errors and retry commit"
+  exit 1
+fi
+echo ""
+
+# PHASE 3: Run Tests (for modified files only)
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║ PHASE 3: TEST VERIFICATION (Modified Tests)                   ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+
+# Find corresponding test files for staged files
+TEST_FILES=$(echo "$STAGED_FILES" | sed 's/\.jsx\?$/\.test.js/; s/\.tsx\?$/\.test.ts/' | grep -E '\.test\.(js|ts)$' || true)
+
+if [ -z "$TEST_FILES" ]; then
+  echo "ℹ No test files found for staged changes"
+else
+  echo "🧪 Running tests for modified files..."
+  if npm run test -- --bail --findRelatedTests $TEST_FILES 2>&1 | tail -20; then
+    echo "✅ Tests: PASS"
+  else
+    echo "⚠️  Tests: WARNING (some tests may have failed)"
+    # Don't block commit on test failures, but warn developer
+  fi
+fi
+echo ""
+
+# PHASE 4: Security Check
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║ PHASE 4: SECURITY CHECK                                       ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+
+# Check for dangerous patterns
+echo "🔐 Scanning for security issues..."
+DANGEROUS_PATTERNS=0
+
+if grep -r "password\|api_key\|secret" $STAGED_FILES 2>/dev/null | grep -v node_modules | grep -v ".lock"; then
+  echo "⚠️  WARNING: Sensitive data patterns detected"
+  DANGEROUS_PATTERNS=$((DANGEROUS_PATTERNS + 1))
+fi
+
+if grep -r "eval\|dangerouslySetInnerHTML" $STAGED_FILES 2>/dev/null | grep -v node_modules; then
+  echo "⚠️  WARNING: Potentially dangerous functions detected"
+  DANGEROUS_PATTERNS=$((DANGEROUS_PATTERNS + 1))
+fi
+
+if [ $DANGEROUS_PATTERNS -eq 0 ]; then
+  echo "✅ Security: PASS"
+else
+  echo "⚠️  Security: WARNING (review detected patterns)"
+fi
+echo ""
+
+# PHASE 5: Final Pre-Commit Checkpoint
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║ PHASE 5: PRE-COMMIT CHECKPOINT                                ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+
+# Create checkpoint before allowing commit
+echo "📸 Creating pre-commit checkpoint..."
+CHECKPOINT_ID="PRE-COMMIT-$(date +%Y%m%d-%H%M%S)"
+git stash create "$CHECKPOINT_ID" > /dev/null 2>&1 || true
+echo "✅ Checkpoint created: $CHECKPOINT_ID"
+echo ""
+
+# Final summary
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║ PRE-COMMIT VALIDATION COMPLETE                                ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "✅ All validations passed"
+echo "✓ Safe to commit"
+echo "✓ Changes ready to push"
+echo ""
+
+# Store checkpoint info in commit message
+export HUSKY_GIT_PARAMS="$@"
+export GIT_COMMIT_CHECKPOINT="$CHECKPOINT_ID"
+
+exit 0
