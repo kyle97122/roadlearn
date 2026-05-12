@@ -1436,7 +1436,7 @@ function RoadLearn() {
       if (typeof google === 'undefined' || !google.accounts) return;
       tokenClientRef.current = google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
-        scope: 'profile email',
+        scope: 'profile email https://www.googleapis.com/auth/generative-language.peruserquota',
         callback: (resp) => {
           if (resp.error) return;
           setGoogleToken(resp.access_token);
@@ -1545,7 +1545,7 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
 
     const rm = ROADMAPS.find(r => r.id === rmId);
     const lv = rm.sections[secIdx].levels[lvlIdx];
-    if (!geminiKey && !apiKey) {
+    if (!geminiKey && !apiKey && !googleToken) {
       setNeedsApiKey(true);
       setLoading(false);
       setScreen("lesson");
@@ -1570,6 +1570,13 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
         const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
           method:"POST",
           headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ contents:[{ parts:[{ text: buildLessonPrompt(lv.name, rm.name, lang) }] }], generationConfig:{ maxOutputTokens:700 } }),
+        });
+        if (resp.ok) { const data = await resp.json(); text = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; }
+      } else if (googleToken) {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${googleToken}` },
           body: JSON.stringify({ contents:[{ parts:[{ text: buildLessonPrompt(lv.name, rm.name, lang) }] }], generationConfig:{ maxOutputTokens:700 } }),
         });
         if (resp.ok) { const data = await resp.json(); text = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; }
@@ -2265,12 +2272,10 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
               {(L_GOOGLE[lang]||L_GOOGLE.fr).signIn}
             </button>
           )}
-          {googleUser && !geminiKey && (
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer"
-              style={{display:'block', marginTop:8, padding:'8px 10px', borderRadius:8, background:dark?'#1c2340':'#eff6ff', border:`1px solid ${dark?'#2d3a6e':'#bfdbfe'}`, textDecoration:'none'}}>
-              <div style={{fontSize:11, color:dark?'#93c5fd':'#1d4ed8', fontWeight:600}}>🤖 Obtenir ma clé Gemini gratuite →</div>
-              <div style={{fontSize:10, color:dark?'#6b7280':'#6b7280', marginTop:2}}>{googleUser.email}</div>
-            </a>
+          {googleUser && !geminiKey && googleToken && (
+            <div style={{marginTop:8, padding:'7px 10px', borderRadius:8, background:dark?'#052e16':'#f0fdf4', border:`1px solid ${dark?'#166534':'#bbf7d0'}`}}>
+              <div style={{fontSize:11, color:dark?'#86efac':'#15803d', fontWeight:600}}>✓ Gemini actif via ton compte Google</div>
+            </div>
           )}
         </div>
 
@@ -2300,8 +2305,8 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
               </a>
             </div>
           ) : (
-            <div style={{fontSize:11, fontFamily:'monospace', color:dark?'#6b7280':'#9ca3af'}}>
-              {geminiKey ? `${geminiKey.slice(0,10)}${'•'.repeat(12)}` : (L_GEMINI[lang]||L_GEMINI.fr).notConfigured}
+            <div style={{fontSize:11, fontFamily:'monospace', color: googleToken && !geminiKey ? '#16a34a' : (dark?'#6b7280':'#9ca3af')}}>
+              {geminiKey ? `${geminiKey.slice(0,10)}${'•'.repeat(12)}` : googleToken ? (L_GEMINI[lang]||L_GEMINI.fr).viaGoogle : (L_GEMINI[lang]||L_GEMINI.fr).notConfigured}
             </div>
           )}
         </div>
