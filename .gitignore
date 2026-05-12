@@ -1,0 +1,28 @@
+# Node modules and local build artifacts
+node_modules/
+build/
+dist/
+coverage/
+
+# Package lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Editor metadata
+.vscode/
+.claude/
+*.code-workspace
+
+# OS temporary files
+.DS_Store
+Thumbs.db
+
+# Generated archives and binaries
+*.zip
+*.vsix
+roadlearn-pwa.zip
+Nouveau dossier compressé.zip
+
+# Husky debug
+.husky/_/

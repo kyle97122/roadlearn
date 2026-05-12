@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#1d4ed8"/>
+  <circle cx="256" cy="230" r="190" fill="#2563eb"/>
+  <text x="256" y="300" font-size="200" text-anchor="middle"
+    font-family="-apple-system,'Helvetica Neue',Arial,sans-serif"
+    font-weight="800" fill="white">RL</text>
+  <text x="256" y="400" font-size="52" text-anchor="middle"
+    font-family="-apple-system,'Helvetica Neue',Arial,sans-serif"
+    font-weight="400" fill="rgba(255,255,255,0.7)" letter-spacing="8">LEARN</text>
+</svg>
