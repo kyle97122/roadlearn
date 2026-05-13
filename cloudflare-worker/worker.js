@@ -89,10 +89,11 @@ export default {
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
         messages: [
-          { role: 'system', content: 'You are a JSON generator. Output raw JSON only — no markdown, no code blocks, no explanation text. Your response must start with [ and end with ].' },
+          { role: 'system', content: 'You are a JSON generator. Output raw JSON only — no markdown, no code blocks, no explanation text. Your response must start with [ and end with ]. Never truncate the array.' },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 800,
+        max_tokens: 1500,
+        temperature: 0,
       }),
     });
 

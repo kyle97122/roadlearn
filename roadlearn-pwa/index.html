@@ -1603,8 +1603,8 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
           }
         }
       }
-    } catch(_) {
-      setError((L_LESSON[lang]||L_LESSON.fr).error || "Erreur de génération");
+    } catch(e) {
+      setError(`Erreur: ${e?.message || e}`);
       setLoading(false);
       return;
     }
