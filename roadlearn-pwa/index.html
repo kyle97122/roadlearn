@@ -222,8 +222,6 @@ const Repeat     = ({size,className}) => <Icon size={size} className={className}
 // ── Stockage ──────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "roadlearn_v2";
 const GOOGLE_CLIENT_ID = "66156942542-15ia2unhu3o9bnvn7v5q88c6k1nc3kd1.apps.googleusercontent.com";
-// ⬇️ Remplace par l'URL de ton Worker Cloudflare une fois déployé
-const WORKER_URL = "https://roadlearn-proxy.cadenet-kyle7.workers.dev";
 
 // ── Traductions Google Sign-In ─────────────────────────────────────────────────
 const L_GOOGLE = {
@@ -1181,18 +1179,9 @@ function getDailyChallenge() {
 // ── Composant principal ───────────────────────────────────────────────────────
 function RoadLearn() {
   const [hasStarted, setHasStarted] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [apiKeyInput, setApiKeyInput] = useState("");
-  const [showApiKey, setShowApiKey] = useState(false);
   const [username, setUsername] = useState("Joueur");
   const [usernameInput, setUsernameInput] = useState("");
   const [editingUsername, setEditingUsername] = useState(false);
-  const [editingApiKey, setEditingApiKey] = useState(false);
-  const [geminiKey, setGeminiKey] = useState("");
-  const [geminiKeyInput, setGeminiKeyInput] = useState("");
-  const [editingGeminiKey, setEditingGeminiKey] = useState(false);
-  const [needsApiKey, setNeedsApiKey] = useState(false);
-  const [googleToken, setGoogleToken] = useState("");
   const [googleUser, setGoogleUser] = useState(null);
   const tokenClientRef = React.useRef(null);
   const [screen, setScreen] = useState("home");
@@ -1374,8 +1363,6 @@ function RoadLearn() {
       if (saved) {
         const data = JSON.parse(saved);
         if (data.hasStarted) setHasStarted(true);
-        if (data.apiKey) { setApiKey(data.apiKey); setApiKeyInput(data.apiKey); }
-        if (data.geminiKey) { setGeminiKey(data.geminiKey); setGeminiKeyInput(data.geminiKey); }
         if (data.username) { setUsername(data.username); setUsernameInput(data.username); }
         if (data.gameState) {
           let gs = { ...data.gameState };
@@ -1403,9 +1390,9 @@ function RoadLearn() {
   useEffect(() => {
     try {
       const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...existing, hasStarted, apiKey, geminiKey, username, gameState: state }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...existing, hasStarted, username, gameState: state }));
     } catch(_) {}
-  }, [state, apiKey, geminiKey, username, hasStarted]);
+  }, [state, username, hasStarted]);
 
   const ul = userLevel(state.xp);
   const xpPct = Math.min(100, Math.round((state.xp / (ul.next || 2000)) * 100));
@@ -1428,8 +1415,6 @@ function RoadLearn() {
     if (s !== 'home') setDailyChallengeResult(null); // reset daily challenge result when navigating away
   }
   function handleStart() { const name = usernameInput.trim() || "Joueur"; setUsername(name); setHasStarted(true); }
-  function saveApiKey() { const t = apiKeyInput.trim(); if (!t) return; setApiKey(t); setEditingApiKey(false); }
-  function saveGeminiKey() { const k = geminiKeyInput.trim(); if (!k) return; setGeminiKey(k); setEditingGeminiKey(false); }
   function saveUsername() { const t = usernameInput.trim(); if (!t) return; setUsername(t); setEditingUsername(false); }
 
   // ── Google Sign-In ─────────────────────────────────────────────────────────
@@ -1441,7 +1426,6 @@ function RoadLearn() {
         scope: 'profile email',
         callback: (resp) => {
           if (resp.error) return;
-          setGoogleToken(resp.access_token);
           fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: `Bearer ${resp.access_token}` }
           }).then(r => r.json()).then(u => {
@@ -1462,12 +1446,9 @@ function RoadLearn() {
     if (tokenClientRef.current) tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
   }
   function googleSignOut() {
-    if (googleToken && typeof google !== 'undefined') google.accounts.oauth2.revoke(googleToken, () => {});
-    setGoogleToken(""); setGoogleUser(null);
+    setGoogleUser(null);
   }
 
-  // Noms de langue pour le prompt IA
-  const LANG_NAMES = { fr:'français', en:'English', es:'español', pt:'português', de:'Deutsch', it:'italiano', nl:'Nederlands', ja:'日本語' };
   const TTS_SPEED_LABEL = { fr:'Vitesse lecture TTS', en:'TTS Speed', es:'Velocidad TTS', pt:'Velocidade TTS', de:'TTS-Tempo', it:'Velocità TTS', nl:'TTS-snelheid', ja:'TTS速度' };
   const TTS_SPEED_SUB   = { fr:'Vitesse de la synthèse vocale', en:'Text-to-speech rate', es:'Velocidad de síntesis de voz', pt:'Velocidade de síntese de voz', de:'Sprachausgabe-Tempo', it:'Velocità di sintesi vocale', nl:'Spraaksnelheid', ja:'音声合成速度' };
 
@@ -1531,95 +1512,19 @@ function RoadLearn() {
     ja:{label:"Gemini APIキー（無料）",placeholder:"AIzaSy...",get:"無料キーを取得 →",notConfigured:"未設定",viaGoogle:"Google経由で設定済み ✓",required:"APIキーが必要です",requiredDesc:"プロフィールタブで無料のGemini APIキーを設定してください"},
   };
 
-  function buildLessonPrompt(lvName, rmName, langCode) {
-    const langName = LANG_NAMES[langCode] || 'français';
-    return `Génère une leçon de programmation en ${langName} sur "${lvName}" (cours: ${rmName}).
-
-Procède dans cet ordre strict :
-1. Rédige la THÉORIE : nomme explicitement 3 à 5 concepts clés de "${lvName}". Chaque concept doit avoir un nom distinct et une explication concrète.
-2. Rédige EXACTEMENT 4 questions QUIZ. Chaque question doit :
-   - Tester un concept dont le NOM apparaît littéralement dans la théorie ci-dessus
-   - Avoir 4 choix (index 0-3), l'index correct varié entre les questions
-   - Inclure une explication courte qui cite le concept de la théorie
-
-IMPORTANT : pour chaque quiz, vérifie que answers[correct] est bien la réponse factuellement exacte avant d'écrire le JSON.
-
-Retourne UNIQUEMENT ce JSON sans markdown :
-[{"type":"theory","content":"..."},{"type":"quiz","q":"...","answers":["...","...","...","..."],"correct":0,"explanation":"..."},{"type":"quiz",...},{"type":"quiz",...},{"type":"quiz",...}]`;
-  }
-
-  async function startLesson(rmId, secIdx, lvlIdx) {
+  function startLesson(rmId, secIdx, lvlIdx) {
     setCurRM(rmId); setCurSecIdx(secIdx); setCurLvlIdx(lvlIdx);
-    setSteps([]); setStepIdx(0); setLives(3); setCorrect(0);
+    setStepIdx(0); setLives(3); setCorrect(0);
     setAnswered(false); setSelectedAns(null); setError(null);
     setShowErrorReview(false); setConfetti(false);
     wrongAnswersRef.current = [];
 
     const rm = ROADMAPS.find(r => r.id === rmId);
-    const lv = rm.sections[secIdx].levels[lvlIdx];
-    if (!geminiKey && !apiKey && !googleToken) {
-      setNeedsApiKey(true);
-      setLoading(false);
-      setScreen("lesson");
-      return;
-    }
-    setNeedsApiKey(false);
-    setLoading(true);
-    setScreen("lesson");
-
-    // ── Cache des leçons (économie de quota) ─────────────────────────────────
-    const cacheKey = `rl_lc_${rmId}_${secIdx}_${lvlIdx}_${lang}`;
-    try {
-      const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
-      if (cached && cached.ts && Date.now() - cached.ts < 7 * 24 * 3600 * 1000) {
-        setSteps(cached.steps); setLoading(false); return;
-      }
-    } catch(_) {}
-
-    try {
-      let text = "";
-      if (googleToken) {
-        const resp = await fetch(WORKER_URL, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${googleToken}` },
-          body: JSON.stringify({ contents:[{ parts:[{ text: buildLessonPrompt(lv.name, rm.name, lang) }] }], generationConfig:{ maxOutputTokens:700 } }),
-        });
-        if (resp.ok) { const data = await resp.json(); text = data.choices?.[0]?.message?.content || ""; }
-        else { const err = await resp.json().catch(()=>({})); setError(`Erreur: ${err?.error?.message || resp.status}`); setLoading(false); return; }
-      } else if (geminiKey) {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ contents:[{ parts:[{ text: buildLessonPrompt(lv.name, rm.name, lang) }] }], generationConfig:{ maxOutputTokens:700 } }),
-        });
-        if (resp.ok) { const data = await resp.json(); text = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; }
-      } else {
-        const resp = await fetch("https://api.anthropic.com/v1/messages", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json", "x-api-key":apiKey, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true" },
-          body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:700, messages:[{ role:"user", content:buildLessonPrompt(lv.name, rm.name, lang) }] }),
-        });
-        if (resp.ok) { const data = await resp.json(); text = (data.content||[]).map(i=>i.text||"").join(""); }
-      }
-      if (text) {
-        let clean = text.replace(/```json\s*/g,"").replace(/```/g,"").trim();
-        const si = clean.indexOf("["), ei = clean.lastIndexOf("]");
-        if (si !== -1) {
-          clean = ei > si ? clean.slice(si, ei+1) : clean.slice(si);
-          const parsed = JSON.parse(clean);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            try { localStorage.setItem(cacheKey, JSON.stringify({ steps: parsed, ts: Date.now() })); } catch(_) {}
-            setSteps(parsed); setLoading(false); return;
-          }
-        }
-      }
-    } catch(e) {
-      setError(`Erreur: ${e?.message || e}`);
-      setLoading(false);
-      return;
-    }
-    setError((L_LESSON[lang]||L_LESSON.fr).error || "Erreur de génération");
+    const sec = rm.sections[secIdx];
+    const lv = sec.levels[lvlIdx];
+    setSteps(generateMockSteps(lv.name, sec.title));
     setLoading(false);
+    setScreen("lesson");
   }
 
   function handleAnswer(idx) {
@@ -2231,42 +2136,8 @@ Retourne UNIQUEMENT ce JSON sans markdown :
           </button>
         </div>
 
-        <div style={{margin:'0 16px', padding:'12px 14px', borderRadius:14, border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`, marginBottom:20, background: dark?'#161616':'#f9fafb'}}>
-          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6}}>
-            <div style={{display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:500, color: dark?'#d1d5db':'#374151'}}>
-              <Key size={13} style={{color: dark?'#6b7280':'#9ca3af'}}/>{(L_PROFILE[lang]||L_PROFILE.fr).apiLabel}
-            </div>
-            <button onClick={()=>{setEditingApiKey(v=>!v);setApiKeyInput(apiKey);setShowApiKey(false);}} style={{fontSize:12, fontWeight:600, color:'#3b82f6', background:'none', border:'none', cursor:'pointer'}}>
-              {editingApiKey?(L_PROFILE[lang]||L_PROFILE.fr).cancel:(L_PROFILE[lang]||L_PROFILE.fr).modify}
-            </button>
-          </div>
-          {editingApiKey ? (
-            <div>
-              <div style={{position:'relative', marginBottom:8}}>
-                <input type={showApiKey?"text":"password"} value={apiKeyInput}
-                  onChange={e=>setApiKeyInput(e.target.value)} placeholder="sk-ant-api03-..."
-                  style={{
-                    width:'100%', border:`1.5px solid ${dark?'#2a2a2a':'#e5e7eb'}`, borderRadius:10,
-                    padding:'8px 36px 8px 12px', fontSize:12,
-                    background: dark?'#0f0f0f':'white', color: dark?'#f9fafb':'#111827', fontFamily:'monospace'
-                  }}/>
-                <button onClick={()=>setShowApiKey(v=>!v)} style={{position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color: dark?'#6b7280':'#9ca3af', background:'none', border:'none', cursor:'pointer'}}>
-                  {showApiKey?<EyeOff size={13}/>:<Eye size={13}/>}
-                </button>
-              </div>
-              <button onClick={saveApiKey} disabled={!apiKeyInput.trim()} style={{
-                width:'100%', background:'#3b82f6', color:'white', borderRadius:10,
-                padding:'8px', fontSize:12, fontWeight:600, border:'none', cursor:'pointer', opacity: apiKeyInput.trim()?1:0.4
-              }}>{(L_PROFILE[lang]||L_PROFILE.fr).save}</button>
-            </div>
-          ) : (
-            <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af', fontFamily:'monospace'}}>
-              {apiKey?`${apiKey.slice(0,10)}${"•".repeat(12)}`:(L_PROFILE[lang]||L_PROFILE.fr).notConfiguredActive}
-            </div>
-          )}
-        </div>
         {/* ── Google Sign-In ─────────────────────────────────────────────── */}
-        <div style={{margin:'0 16px', padding:'12px 14px', borderRadius:14, border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`, marginBottom:12, background:dark?'#161616':'#f9fafb'}}>
+        <div style={{margin:'0 16px', padding:'12px 14px', borderRadius:14, border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`, marginBottom:20, background:dark?'#161616':'#f9fafb'}}>
           <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.06em', marginBottom:8}}>COMPTE GOOGLE</div>
           {googleUser ? (
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
@@ -2284,47 +2155,6 @@ Retourne UNIQUEMENT ce JSON sans markdown :
               <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
               {(L_GOOGLE[lang]||L_GOOGLE.fr).signIn}
             </button>
-          )}
-          {googleUser && googleToken && (
-            <div style={{marginTop:8, padding:'7px 10px', borderRadius:8, background:dark?'#052e16':'#f0fdf4', border:`1px solid ${dark?'#166534':'#bbf7d0'}`}}>
-              <div style={{fontSize:11, color:dark?'#86efac':'#15803d', fontWeight:600}}>✓ IA active via Google (Groq)</div>
-            </div>
-          )}
-        </div>
-
-        {/* ── Clé Gemini ─────────────────────────────────────────────────── */}
-        <div style={{margin:'0 16px', padding:'12px 14px', borderRadius:14, border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`, marginBottom:20, background: dark?'#161616':'#f9fafb'}}>
-          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6}}>
-            <div style={{display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:500, color: dark?'#d1d5db':'#374151'}}>
-              <span style={{fontSize:14}}>🤖</span>{(L_GEMINI[lang]||L_GEMINI.fr).label}
-            </div>
-            <button onClick={()=>{ setEditingGeminiKey(v=>!v); setGeminiKeyInput(geminiKey); }}
-              style={{fontSize:11, fontWeight:600, color:'#3b82f6', background:'none', border:'none', cursor:'pointer'}}>
-              {editingGeminiKey ? (L_PROFILE[lang]||L_PROFILE.fr).cancel : (L_PROFILE[lang]||L_PROFILE.fr).modify}
-            </button>
-          </div>
-          {editingGeminiKey ? (
-            <div>
-              <input type="text" value={geminiKeyInput} onChange={e=>setGeminiKeyInput(e.target.value)}
-                placeholder={(L_GEMINI[lang]||L_GEMINI.fr).placeholder}
-                style={{width:'100%', borderRadius:8, padding:'8px 10px', fontSize:11, border:`1.5px solid ${dark?'#374151':'#e5e7eb'}`, background:dark?'#1f2937':'#fff', color:dark?'#f9fafb':'#111827', boxSizing:'border-box', marginBottom:8}}/>
-              <button onClick={saveGeminiKey} disabled={!geminiKeyInput.trim()}
-                style={{width:'100%', background:'#3b82f6', color:'white', border:'none', borderRadius:8, padding:'8px', fontSize:12, fontWeight:600, cursor:'pointer', opacity:geminiKeyInput.trim()?1:0.4, marginBottom:6}}>
-                {(L_PROFILE[lang]||L_PROFILE.fr).save}
-              </button>
-              {geminiKey && <button onClick={()=>{ setGeminiKey(""); setGeminiKeyInput(""); setEditingGeminiKey(false); }}
-                style={{width:'100%', background:'none', color:'#ef4444', border:'1.5px solid #ef4444', borderRadius:8, padding:'7px', fontSize:12, fontWeight:600, cursor:'pointer', marginBottom:6}}>
-                🗑 Supprimer la clé
-              </button>}
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer"
-                style={{display:'block', textAlign:'center', fontSize:11, color:'#3b82f6', textDecoration:'none'}}>
-                {(L_GEMINI[lang]||L_GEMINI.fr).get}
-              </a>
-            </div>
-          ) : (
-            <div style={{fontSize:11, fontFamily:'monospace', color: googleToken && !geminiKey ? '#16a34a' : (dark?'#6b7280':'#9ca3af')}}>
-              {geminiKey ? `${geminiKey.slice(0,10)}${'•'.repeat(12)}` : googleToken ? (L_GEMINI[lang]||L_GEMINI.fr).viaGoogle : (L_GEMINI[lang]||L_GEMINI.fr).notConfigured}
-            </div>
           )}
         </div>
       </div>
@@ -2464,21 +2294,6 @@ Retourne UNIQUEMENT ce JSON sans markdown :
               <div style={{fontSize:12, color: dark?'#9ca3af':'#6b7280', marginBottom:16, padding:'0 16px'}}>{error}</div>
               <button onClick={()=>startLesson(curRM,curSecIdx,curLvlIdx)} style={{background:'#3b82f6', color:'white', borderRadius:12, padding:'10px 24px', fontSize:13, fontWeight:600, border:'none', cursor:'pointer', marginBottom:8, display:'block', margin:'0 auto 8px'}}>{(L_LESSON[lang]||L_LESSON.fr).retry}</button>
               <button onClick={()=>setScreen("levels")} style={{background:'none', border:'none', cursor:'pointer', color: dark?'#6b7280':'#9ca3af', fontSize:13}}>{(L_LESSON[lang]||L_LESSON.fr).back}</button>
-            </div>
-          )}
-
-          {needsApiKey&&(
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'40px 16px',gap:12,textAlign:'center'}}>
-              <div style={{fontSize:40}}>🔑</div>
-              <div style={{fontWeight:600,fontSize:14,color:dark?'#f9fafb':'#111827'}}>{(L_GEMINI[lang]||L_GEMINI.fr).required}</div>
-              <div style={{fontSize:12,color:dark?'#9ca3af':'#6b7280',padding:'0 8px'}}>{(L_GEMINI[lang]||L_GEMINI.fr).requiredDesc}</div>
-              <button onClick={()=>{ setNeedsApiKey(false); setScreen("profile"); setTab("profile"); }}
-                style={{background:'#3b82f6',color:'white',border:'none',borderRadius:10,padding:'10px 24px',fontSize:12,fontWeight:600,cursor:'pointer',marginTop:8}}>
-                {(L_PROFILE[lang]||L_PROFILE.fr).title}
-              </button>
-              <button onClick={()=>setScreen("levels")} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:dark?'#6b7280':'#9ca3af',marginTop:4}}>
-                {(L_LESSON[lang]||L_LESSON.fr).back}
-              </button>
             </div>
           )}
 
