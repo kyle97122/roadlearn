@@ -1568,14 +1568,7 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
 
     try {
       let text = "";
-      if (geminiKey) {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ contents:[{ parts:[{ text: buildLessonPrompt(lv.name, rm.name, lang) }] }], generationConfig:{ maxOutputTokens:700 } }),
-        });
-        if (resp.ok) { const data = await resp.json(); text = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; }
-      } else if (googleToken) {
+      if (googleToken) {
         const resp = await fetch(WORKER_URL, {
           method:"POST",
           headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${googleToken}` },
@@ -1583,6 +1576,13 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
         });
         if (resp.ok) { const data = await resp.json(); text = data.choices?.[0]?.message?.content || ""; }
         else { const err = await resp.json().catch(()=>({})); setError(`Erreur: ${err?.error?.message || resp.status}`); setLoading(false); return; }
+      } else if (geminiKey) {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ contents:[{ parts:[{ text: buildLessonPrompt(lv.name, rm.name, lang) }] }], generationConfig:{ maxOutputTokens:700 } }),
+        });
+        if (resp.ok) { const data = await resp.json(); text = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; }
       } else {
         const resp = await fetch("https://api.anthropic.com/v1/messages", {
           method:"POST",
@@ -2275,9 +2275,9 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
               {(L_GOOGLE[lang]||L_GOOGLE.fr).signIn}
             </button>
           )}
-          {googleUser && !geminiKey && googleToken && (
+          {googleUser && googleToken && (
             <div style={{marginTop:8, padding:'7px 10px', borderRadius:8, background:dark?'#052e16':'#f0fdf4', border:`1px solid ${dark?'#166534':'#bbf7d0'}`}}>
-              <div style={{fontSize:11, color:dark?'#86efac':'#15803d', fontWeight:600}}>✓ Gemini actif via ton compte Google</div>
+              <div style={{fontSize:11, color:dark?'#86efac':'#15803d', fontWeight:600}}>✓ IA active via Google (Groq)</div>
             </div>
           )}
         </div>
