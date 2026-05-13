@@ -1534,8 +1534,16 @@ function RoadLearn() {
   function buildLessonPrompt(lvName, rmName, langCode) {
     const langName = LANG_NAMES[langCode] || 'français';
     return `Génère une leçon de programmation en ${langName} sur "${lvName}" (cours: ${rmName}).
-Règles: 1) UN bloc théorie (concepts clés, concis). 2) EXACTEMENT 4 questions quiz testant UNIQUEMENT ce qui est dans la théorie ci-dessus — aucune question ne peut porter sur un concept absent de la théorie. 3) 4 choix par question, index correct varié. 4) Tout en ${langName}.
-JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz","q":"...","answers":["A","B","C","D"],"correct":1,"explanation":"..."},...]`;
+
+Procède dans cet ordre strict :
+1. Rédige la THÉORIE : nomme explicitement 3 à 5 concepts clés de "${lvName}". Chaque concept doit avoir un nom distinct et une explication concrète.
+2. Rédige EXACTEMENT 4 questions QUIZ. Chaque question doit :
+   - Tester un concept dont le NOM apparaît littéralement dans la théorie ci-dessus
+   - Avoir 4 choix (index 0-3), l'index correct varié entre les questions
+   - Inclure une explication courte qui cite le concept de la théorie
+
+Retourne UNIQUEMENT ce JSON sans markdown :
+[{"type":"theory","content":"..."},{"type":"quiz","q":"...","answers":["...","...","...","..."],"correct":0,"explanation":"..."},{"type":"quiz",...},{"type":"quiz",...},{"type":"quiz",...}]`;
   }
 
   async function startLesson(rmId, secIdx, lvlIdx) {
