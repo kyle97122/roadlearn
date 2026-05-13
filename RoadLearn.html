@@ -2302,6 +2302,10 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
                 style={{width:'100%', background:'#3b82f6', color:'white', border:'none', borderRadius:8, padding:'8px', fontSize:12, fontWeight:600, cursor:'pointer', opacity:geminiKeyInput.trim()?1:0.4, marginBottom:6}}>
                 {(L_PROFILE[lang]||L_PROFILE.fr).save}
               </button>
+              {geminiKey && <button onClick={()=>{ setGeminiKey(""); setGeminiKeyInput(""); setEditingGeminiKey(false); }}
+                style={{width:'100%', background:'none', color:'#ef4444', border:'1.5px solid #ef4444', borderRadius:8, padding:'7px', fontSize:12, fontWeight:600, cursor:'pointer', marginBottom:6}}>
+                🗑 Supprimer la clé
+              </button>}
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer"
                 style={{display:'block', textAlign:'center', fontSize:11, color:'#3b82f6', textDecoration:'none'}}>
                 {(L_GEMINI[lang]||L_GEMINI.fr).get}
