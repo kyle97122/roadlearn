@@ -1542,6 +1542,8 @@ Procède dans cet ordre strict :
    - Avoir 4 choix (index 0-3), l'index correct varié entre les questions
    - Inclure une explication courte qui cite le concept de la théorie
 
+IMPORTANT : pour chaque quiz, vérifie que answers[correct] est bien la réponse factuellement exacte avant d'écrire le JSON.
+
 Retourne UNIQUEMENT ce JSON sans markdown :
 [{"type":"theory","content":"..."},{"type":"quiz","q":"...","answers":["...","...","...","..."],"correct":0,"explanation":"..."},{"type":"quiz",...},{"type":"quiz",...},{"type":"quiz",...}]`;
   }
