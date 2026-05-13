@@ -1,13 +1,13 @@
 /**
- * RoadLearn Gemini Proxy — Cloudflare Worker
+ * RoadLearn Groq Proxy — Cloudflare Worker
  *
- * Secrets à configurer dans le dashboard Cloudflare (Settings → Variables → Secrets) :
- *   GEMINI_API_KEY   → ta clé API Gemini (depuis aistudio.google.com)
+ * Secret à configurer dans le dashboard Cloudflare (Settings → Variables → Secrets) :
+ *   GROQ_API_KEY   → ta clé API Groq (depuis console.groq.com, gratuit)
  *
  * Ce Worker :
  *   1. Accepte uniquement les requêtes depuis kyle97122.github.io (CORS)
  *   2. Vérifie que le Bearer token est un token Google valide
- *   3. Appelle l'API Gemini avec la clé secrète stockée côté Cloudflare
+ *   3. Appelle l'API Groq avec la clé secrète stockée côté Cloudflare
  *   4. Retourne la réponse au frontend
  */
 
@@ -19,7 +19,6 @@ export default {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
-    // Réponse au preflight CORS
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
@@ -42,7 +41,6 @@ export default {
 
     const accessToken = auth.slice(7);
 
-    // Valider le token auprès de Google
     const tokenVerify = await fetch(
       `https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${encodeURIComponent(accessToken)}`
     );
@@ -62,20 +60,45 @@ export default {
       });
     }
 
-    // ── Appel à l'API Gemini ──────────────────────────────────────────────────
-    const body = await request.text();
-    const geminiResp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      }
-    );
+    // ── Extraction du prompt depuis le format Gemini envoyé par le frontend ───
+    let prompt = '';
+    try {
+      const body = await request.json();
+      prompt = body?.contents?.[0]?.parts?.[0]?.text || '';
+    } catch {
+      return new Response(JSON.stringify({ error: 'Corps de requête invalide.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    const result = await geminiResp.text();
+    if (!prompt) {
+      return new Response(JSON.stringify({ error: 'Prompt vide.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Appel à l'API Groq ────────────────────────────────────────────────────
+    const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: 'You are a JSON generator. Output raw JSON only — no markdown, no code blocks, no explanation text. Your response must start with [ and end with ].' },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 800,
+      }),
+    });
+
+    const result = await groqResp.text();
     return new Response(result, {
-      status: geminiResp.status,
+      status: groqResp.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   },
