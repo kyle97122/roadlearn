@@ -1581,7 +1581,7 @@ JSON uniquement sans markdown: [{"type":"theory","content":"..."},{"type":"quiz"
           headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${googleToken}` },
           body: JSON.stringify({ contents:[{ parts:[{ text: buildLessonPrompt(lv.name, rm.name, lang) }] }], generationConfig:{ maxOutputTokens:700 } }),
         });
-        if (resp.ok) { const data = await resp.json(); text = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; }
+        if (resp.ok) { const data = await resp.json(); text = data.choices?.[0]?.message?.content || ""; }
         else { const err = await resp.json().catch(()=>({})); setError(`Erreur: ${err?.error?.message || resp.status}`); setLoading(false); return; }
       } else {
         const resp = await fetch("https://api.anthropic.com/v1/messages", {
