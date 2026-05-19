@@ -1887,8 +1887,8 @@ function detectTopicKey(levelName) {
   if (n.includes("normalisation") || n.includes("modélisation")) return "sql-modeling";
   if (n.includes("index") && (n.includes("performance") || n.includes("bases") || n.includes("sql") || n.includes("&"))) return "sql-index";
   if (n.includes("sous-requête")) return "sql-advanced";
-  if (n.includes("sql") || n.includes("requête") || n.includes("select") || n.includes("filtres")) return "sql";
   if (n.includes("postgresql") || n.includes("postgres")) return "postgresql";
+  if (n.includes("sql") || n.includes("requête") || n.includes("select") || n.includes("filtres")) return "sql";
 
   // ── Git / CI-CD ──
   if (n.includes("gitlab")) return "gitlab";
