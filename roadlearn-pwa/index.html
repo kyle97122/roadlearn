@@ -2263,6 +2263,12 @@ function RoadLearn() {
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'default');
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const [showTheory, setShowTheory] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [tSteps, setTSteps] = useState(null);        // steps traduits (null = utiliser steps bruts FR)
+  const [tDailyChallenge, setTDailyChallenge] = useState(null); // daily challenge traduit
+  const [tRoadmaps, setTRoadmaps] = useState(null);  // noms roadmaps/sections/niveaux traduits
+  const audioRef = React.useRef(null);               // Audio cloud TTS
+  const translCache = React.useRef({});              // cache: translCache[lang][cacheKey] = steps
 
   // ── Thème + langue + notifications ────────────────────────────────────────
   useEffect(() => {
@@ -2301,6 +2307,55 @@ function RoadLearn() {
   function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang', code); } catch(_) {} }
   function changeTtsSpeed(s) { setTtsSpeed(s); try { localStorage.setItem('rl_tts_speed', String(s)); } catch(_) {} }
 
+  // ── Google Translate (API gratuite, pas de clé) ───────────────────────────
+  const GTRANSLATE_LANG = { fr:'fr', en:'en', es:'es', pt:'pt', de:'de', it:'it', nl:'nl', ja:'ja' };
+  async function gTranslate(texts, tl) {
+    if (tl === 'fr') return texts;
+    const SEP = '\n|||SEP|||\n';
+    // Découper en lots ≤ 3800 chars
+    const batches = [];
+    let cur = [], curLen = 0;
+    for (const tx of texts) {
+      if (curLen + tx.length + SEP.length > 3800 && cur.length) {
+        batches.push(cur); cur = [tx]; curLen = tx.length;
+      } else { cur.push(tx); curLen += tx.length + SEP.length; }
+    }
+    if (cur.length) batches.push(cur);
+    const out = [];
+    for (const batch of batches) {
+      const q = batch.join(SEP);
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=${tl}&dt=t&q=${encodeURIComponent(q)}`;
+      const r = await fetch(url);
+      const d = await r.json();
+      const translated = d[0].map(x => x[0]).join('');
+      const pieces = translated.split(SEP.trim());
+      // En cas de décalage, recompleter avec originaux
+      for (let i = 0; i < batch.length; i++) out.push(pieces[i] !== undefined ? pieces[i].trim() : batch[i]);
+    }
+    return out;
+  }
+  async function translateStepsData(rawSteps, targetLang) {
+    if (targetLang === 'fr' || !rawSteps || rawSteps.length === 0) return rawSteps;
+    const tl = GTRANSLATE_LANG[targetLang] || 'fr';
+    const theory = rawSteps[0]?.content || '';
+    const quizItems = rawSteps.slice(1);
+    const texts = [theory];
+    for (const s of quizItems) { texts.push(s.q, s.answers[0], s.answers[1], s.answers[2], s.answers[3], s.explanation); }
+    // Clé de cache basée sur le 1er texte
+    const cacheKey = theory.substring(0, 60) + '_' + targetLang;
+    if (translCache.current[cacheKey]) return translCache.current[cacheKey];
+    try {
+      const tr = await gTranslate(texts, tl);
+      let i = 0;
+      const result = [{ ...rawSteps[0], content: tr[i++] }];
+      for (const s of quizItems) {
+        result.push({ ...s, q: tr[i++], answers: [tr[i++], tr[i++], tr[i++], tr[i++]], explanation: tr[i++] });
+      }
+      translCache.current[cacheKey] = result;
+      return result;
+    } catch(e) { return rawSteps; }
+  }
+
   // ── Daily Challenge handler ──────────────────────────────────────────────
   function handleDailyChallenge(dc, idx) {
     if (dailyChallengeResult) return; // already answered
@@ -2322,61 +2377,96 @@ function RoadLearn() {
     if (perm === 'granted') saveNotif({ ...notifSettings, global: true });
   }
   const TTS_LANG = { fr:'fr-FR', en:'en-US', es:'es-ES', pt:'pt-BR', de:'de-DE', it:'it-IT', nl:'nl-NL', ja:'ja-JP' };
-  function speakText(text) {
-    if (!('speechSynthesis' in window)) return;
-    if (ttsPlaying) { window.speechSynthesis.cancel(); setTtsPlaying(false); return; }
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    const targetLang = TTS_LANG[lang] || 'fr-FR';
-    utter.lang = targetLang;
-    // Sélection de la voix la plus naturelle disponible
-    const trySpeak = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        const langCode = targetLang.split('-')[0];
-        const scored = voices
-          .filter(v => v.lang.startsWith(langCode))
-          .map(v => {
-            let s = 0;
-            const n = v.name.toLowerCase();
-            // Voix neuronales/online = les plus humaines
-            if (n.includes('natural'))  s += 12;
-            if (n.includes('neural'))   s += 11;
-            if (n.includes('wavenet'))  s += 10;
-            if (n.includes('premium'))  s += 9;
-            if (n.includes('enhanced')) s += 8;
-            // Fournisseurs haute qualité
-            if (n.includes('google'))    s += 5;
-            if (n.includes('microsoft')) s += 4;
-            // Voix en ligne > voix locales (plus naturelles)
-            if (!v.localService) s += 3;
-            // Correspondance exacte de locale (ex: fr-FR > fr-CA)
-            if (v.lang === targetLang) s += 4;
-            // Voix féminines connues pour leur naturel
-            const femNames = ['amélie','léa','lea','audrey','marie','samantha','karen','moira','victoria','allison','susan','joana','luciana','ava','aria','alice','elsa','linda','emma'];
-            if (femNames.some(fn => n.includes(fn))) s += 3;
-            return { v, s };
-          })
-          .sort((a, b) => b.s - a.s);
-        if (scored.length > 0) utter.voice = scored[0].v;
-      }
-      utter.rate = ttsSpeed;
-      utter.pitch = 0.95; // légèrement plus grave = plus humain
-      utter.volume = 1;
-      utter.onend = () => setTtsPlaying(false);
-      utter.onerror = () => setTtsPlaying(false);
-      window.speechSynthesis.speak(utter);
-      setTtsPlaying(true);
-    };
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) {
-      window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged = null; trySpeak(); };
-    } else {
-      trySpeak();
-    }
+  function stopAudio() {
+    if (audioRef.current) { try { audioRef.current.pause(); } catch(_) {} audioRef.current = null; }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    setTtsPlaying(false);
   }
-  useEffect(() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); setTtsPlaying(false); setShowTheory(false); }, [screen]);
-  useEffect(() => { setShowTheory(false); setTtsPlaying(false); if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }, [stepIdx]);
+  // ── TTS cloud (Google TTS, aucune voix à télécharger sur l'appareil) ──────
+  function speakText(text) {
+    if (!text) return;
+    if (ttsPlaying) { stopAudio(); return; }
+    stopAudio();
+    const tl = GTRANSLATE_LANG[lang] || 'fr';
+    // Découpe en segments ≤ 180 chars (limite API Google TTS)
+    const chunks = [];
+    const sents = text.split(/(?<=[.!?;])\s+/);
+    let cur = '';
+    for (const s of sents) {
+      if ((cur + ' ' + s).length > 175 && cur) { chunks.push(cur.trim()); cur = s; }
+      else { cur = cur ? cur + ' ' + s : s; }
+    }
+    if (cur.trim()) chunks.push(cur.trim());
+    if (chunks.length === 0) return;
+    let idx = 0;
+    const fallbackSpeak = (remaining) => {
+      if (!('speechSynthesis' in window)) { setTtsPlaying(false); return; }
+      const u = new SpeechSynthesisUtterance(remaining);
+      u.lang = TTS_LANG[lang] || 'fr-FR'; u.rate = ttsSpeed;
+      u.onend = () => setTtsPlaying(false); u.onerror = () => setTtsPlaying(false);
+      window.speechSynthesis.speak(u);
+    };
+    function playNext() {
+      if (idx >= chunks.length) { setTtsPlaying(false); audioRef.current = null; return; }
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunks[idx])}&tl=${tl}&client=tw-ob`;
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.playbackRate = Math.max(0.5, Math.min(ttsSpeed * 1.1, 2.0));
+      audio.onended = () => { idx++; playNext(); };
+      audio.onerror = () => fallbackSpeak(chunks.slice(idx).join(' '));
+      audio.play().catch(() => fallbackSpeak(chunks.slice(idx).join(' ')));
+    }
+    setTtsPlaying(true);
+    playNext();
+  }
+  useEffect(() => { stopAudio(); setShowTheory(false); }, [screen]);
+  useEffect(() => { setShowTheory(false); stopAudio(); }, [stepIdx]);
+  // ── Auto-traduction : daily challenge ─────────────────────────────────────
+  useEffect(() => {
+    if (lang === 'fr') { setTDailyChallenge(null); return; }
+    const dc = getDailyChallenge();
+    const texts = [dc.q, dc.answers[0], dc.answers[1], dc.answers[2], dc.answers[3], dc.explanation];
+    const tl = GTRANSLATE_LANG[lang] || 'fr';
+    gTranslate(texts, tl).then(tr => {
+      setTDailyChallenge({ ...dc, q:tr[0], answers:[tr[1],tr[2],tr[3],tr[4]], explanation:tr[5] });
+    }).catch(()=>{});
+  }, [lang]);
+
+  // ── Auto-traduction : noms roadmaps / sections / niveaux ──────────────────
+  useEffect(() => {
+    if (lang === 'fr') { setTRoadmaps(null); return; }
+    const texts = [];
+    for (const rm of ROADMAPS) {
+      texts.push(rm.name);
+      for (const sec of rm.sections) {
+        texts.push(sec.title);
+        for (const lv of sec.levels) texts.push(lv.name);
+      }
+    }
+    const tl = GTRANSLATE_LANG[lang] || 'fr';
+    gTranslate(texts, tl).then(tr => {
+      let i = 0;
+      const translated = ROADMAPS.map(rm => ({
+        ...rm,
+        name: tr[i++],
+        sections: rm.sections.map(sec => ({
+          ...sec,
+          title: tr[i++],
+          levels: sec.levels.map(lv => ({ ...lv, name: tr[i++] }))
+        }))
+      }));
+      setTRoadmaps(translated);
+    }).catch(()=>{});
+  }, [lang]);
+
+  // ── Auto-traduction : steps de la leçon courante (si lang change en cours) ─
+  useEffect(() => {
+    if (screen !== 'lesson' || !steps || steps.length === 0) return;
+    if (lang === 'fr') { setTSteps(null); return; }
+    setTranslating(true);
+    translateStepsData(steps, lang).then(t => { setTSteps(t); setTranslating(false); });
+  }, [lang]);
+
   const t = TRANSLATIONS[lang] || TRANSLATIONS.fr;
 
   const ThemeToggle = () => (
@@ -2507,14 +2597,14 @@ function RoadLearn() {
 
   // ── Traductions écran leçon ───────────────────────────────────────────────
   const L_LESSON = {
-    fr:{loading:"Chargement…",preparing:"Préparation du cours…",instant:"Juste un instant ✨",lesson:"Leçon",question:"Question",theory:"THÉORIE",understood:"J'ai compris →",speed:"Vitesse",cont:"Continuer →",finish:"Terminer ✨",seeResult:"Voir le résultat →",retry:"Réessayer",back:"Retour",error:"Erreur",noApiMsg:"Le contenu local est en français. Ajoutez une clé API dans Profil pour générer des leçons dans votre langue.",correct:"✅ Bonne réponse !",wrong:"❌ Pas tout à fait…"},
-    en:{loading:"Loading…",preparing:"Preparing your lesson…",instant:"Just a moment ✨",lesson:"Lesson",question:"Question",theory:"THEORY",understood:"Got it →",speed:"Speed",cont:"Continue →",finish:"Finish ✨",seeResult:"See result →",retry:"Retry",back:"Back",error:"Error",noApiMsg:"Local content is in French. Add an API key in Profile to generate lessons in your language.",correct:"✅ Correct!",wrong:"❌ Not quite…"},
-    es:{loading:"Cargando…",preparing:"Preparando tu lección…",instant:"Un momento ✨",lesson:"Lección",question:"Pregunta",theory:"TEORÍA",understood:"Entendido →",speed:"Velocidad",cont:"Continuar →",finish:"Terminar ✨",seeResult:"Ver resultado →",retry:"Reintentar",back:"Volver",error:"Error",noApiMsg:"El contenido local está en francés. Añade una clave API en Perfil para generar lecciones en tu idioma.",correct:"✅ ¡Correcto!",wrong:"❌ No del todo…"},
-    pt:{loading:"Carregando…",preparing:"Preparando sua lição…",instant:"Um momento ✨",lesson:"Lição",question:"Pergunta",theory:"TEORIA",understood:"Entendido →",speed:"Velocidade",cont:"Continuar →",finish:"Terminar ✨",seeResult:"Ver resultado →",retry:"Tentar novamente",back:"Voltar",error:"Erro",noApiMsg:"O conteúdo local está em francês. Adicione uma chave API no Perfil para gerar lições no seu idioma.",correct:"✅ Correto!",wrong:"❌ Não exatamente…"},
-    de:{loading:"Lädt…",preparing:"Lektion wird vorbereitet…",instant:"Einen Moment ✨",lesson:"Lektion",question:"Frage",theory:"THEORIE",understood:"Verstanden →",speed:"Tempo",cont:"Weiter →",finish:"Beenden ✨",seeResult:"Ergebnis anzeigen →",retry:"Wiederholen",back:"Zurück",error:"Fehler",noApiMsg:"Lokale Inhalte sind auf Französisch. Füge einen API-Schlüssel im Profil hinzu, um Lektionen in deiner Sprache zu generieren.",correct:"✅ Richtig!",wrong:"❌ Nicht ganz…"},
-    it:{loading:"Caricamento…",preparing:"Preparazione della lezione…",instant:"Un momento ✨",lesson:"Lezione",question:"Domanda",theory:"TEORIA",understood:"Capito →",speed:"Velocità",cont:"Continua →",finish:"Termina ✨",seeResult:"Vedi risultato →",retry:"Riprova",back:"Indietro",error:"Errore",noApiMsg:"Il contenuto locale è in francese. Aggiungi una chiave API nel Profilo per generare lezioni nella tua lingua.",correct:"✅ Corretto!",wrong:"❌ Non proprio…"},
-    nl:{loading:"Laden…",preparing:"Les wordt voorbereid…",instant:"Eventjes ✨",lesson:"Les",question:"Vraag",theory:"THEORIE",understood:"Begrepen →",speed:"Snelheid",cont:"Doorgaan →",finish:"Klaar ✨",seeResult:"Resultaat bekijken →",retry:"Opnieuw proberen",back:"Terug",error:"Fout",noApiMsg:"Lokale inhoud is in het Frans. Voeg een API-sleutel toe in Profiel om lessen in jouw taal te genereren.",correct:"✅ Juist!",wrong:"❌ Niet helemaal…"},
-    ja:{loading:"読み込み中…",preparing:"レッスンを準備中…",instant:"少しお待ちください ✨",lesson:"レッスン",question:"質問",theory:"理論",understood:"わかった →",speed:"速度",cont:"続ける →",finish:"終了 ✨",seeResult:"結果を見る →",retry:"再試行",back:"戻る",error:"エラー",noApiMsg:"ローカルコンテンツはフランス語です。プロフィールでAPIキーを追加して、あなたの言語でレッスンを生成してください。",correct:"✅ 正解！",wrong:"❌ 惜しい…"},
+    fr:{loading:"Chargement…",preparing:"Préparation du cours…",instant:"Juste un instant ✨",lesson:"Leçon",question:"Question",theory:"THÉORIE",understood:"J'ai compris →",speed:"Vitesse",cont:"Continuer →",finish:"Terminer ✨",seeResult:"Voir le résultat →",retry:"Réessayer",back:"Retour",error:"Erreur",noApiMsg:"Le contenu local est en français. Ajoutez une clé API dans Profil pour générer des leçons dans votre langue.",correct:"✅ Bonne réponse !",wrong:"❌ Pas tout à fait…",levelsCompleted:"niveaux complétés",typeCode:"Code",typeTheory:"Théorie + Quiz",typeQuiz:"Quiz",replayLabel:"Rejouer"},
+    en:{loading:"Loading…",preparing:"Preparing your lesson…",instant:"Just a moment ✨",lesson:"Lesson",question:"Question",theory:"THEORY",understood:"Got it →",speed:"Speed",cont:"Continue →",finish:"Finish ✨",seeResult:"See result →",retry:"Retry",back:"Back",error:"Error",noApiMsg:"Local content is in French. Add an API key in Profile to generate lessons in your language.",correct:"✅ Correct!",wrong:"❌ Not quite…",levelsCompleted:"levels completed",typeCode:"Code",typeTheory:"Theory + Quiz",typeQuiz:"Quiz",replayLabel:"Replay"},
+    es:{loading:"Cargando…",preparing:"Preparando tu lección…",instant:"Un momento ✨",lesson:"Lección",question:"Pregunta",theory:"TEORÍA",understood:"Entendido →",speed:"Velocidad",cont:"Continuar →",finish:"Terminar ✨",seeResult:"Ver resultado →",retry:"Reintentar",back:"Volver",error:"Error",noApiMsg:"El contenido local está en francés. Añade una clave API en Perfil para generar lecciones en tu idioma.",correct:"✅ ¡Correcto!",wrong:"❌ No del todo…",levelsCompleted:"niveles completados",typeCode:"Código",typeTheory:"Teoría + Quiz",typeQuiz:"Quiz",replayLabel:"Repetir"},
+    pt:{loading:"Carregando…",preparing:"Preparando sua lição…",instant:"Um momento ✨",lesson:"Lição",question:"Pergunta",theory:"TEORIA",understood:"Entendido →",speed:"Velocidade",cont:"Continuar →",finish:"Terminar ✨",seeResult:"Ver resultado →",retry:"Tentar novamente",back:"Voltar",error:"Erro",noApiMsg:"O conteúdo local está em francês. Adicione uma chave API no Perfil para gerar lições no seu idioma.",correct:"✅ Correto!",wrong:"❌ Não exatamente…",levelsCompleted:"níveis concluídos",typeCode:"Código",typeTheory:"Teoria + Quiz",typeQuiz:"Quiz",replayLabel:"Repetir"},
+    de:{loading:"Lädt…",preparing:"Lektion wird vorbereitet…",instant:"Einen Moment ✨",lesson:"Lektion",question:"Frage",theory:"THEORIE",understood:"Verstanden →",speed:"Tempo",cont:"Weiter →",finish:"Beenden ✨",seeResult:"Ergebnis anzeigen →",retry:"Wiederholen",back:"Zurück",error:"Fehler",noApiMsg:"Lokale Inhalte sind auf Französisch. Füge einen API-Schlüssel im Profil hinzu, um Lektionen in deiner Sprache zu generieren.",correct:"✅ Richtig!",wrong:"❌ Nicht ganz…",levelsCompleted:"Level abgeschlossen",typeCode:"Code",typeTheory:"Theorie + Quiz",typeQuiz:"Quiz",replayLabel:"Wiederholen"},
+    it:{loading:"Caricamento…",preparing:"Preparazione della lezione…",instant:"Un momento ✨",lesson:"Lezione",question:"Domanda",theory:"TEORIA",understood:"Capito →",speed:"Velocità",cont:"Continua →",finish:"Termina ✨",seeResult:"Vedi risultato →",retry:"Riprova",back:"Indietro",error:"Errore",noApiMsg:"Il contenuto locale è in francese. Aggiungi una chiave API nel Profilo per generare lezioni nella tua lingua.",correct:"✅ Corretto!",wrong:"❌ Non proprio…",levelsCompleted:"livelli completati",typeCode:"Codice",typeTheory:"Teoria + Quiz",typeQuiz:"Quiz",replayLabel:"Rigioca"},
+    nl:{loading:"Laden…",preparing:"Les wordt voorbereid…",instant:"Eventjes ✨",lesson:"Les",question:"Vraag",theory:"THEORIE",understood:"Begrepen →",speed:"Snelheid",cont:"Doorgaan →",finish:"Klaar ✨",seeResult:"Resultaat bekijken →",retry:"Opnieuw proberen",back:"Terug",error:"Fout",noApiMsg:"Lokale inhoud is in het Frans. Voeg een API-sleutel toe in Profiel om lessen in jouw taal te genereren.",correct:"✅ Juist!",wrong:"❌ Niet helemaal…",levelsCompleted:"niveaus voltooid",typeCode:"Code",typeTheory:"Theorie + Quiz",typeQuiz:"Quiz",replayLabel:"Opnieuw spelen"},
+    ja:{loading:"読み込み中…",preparing:"レッスンを準備中…",instant:"少しお待ちください ✨",lesson:"レッスン",question:"質問",theory:"理論",understood:"わかった →",speed:"速度",cont:"続ける →",finish:"終了 ✨",seeResult:"結果を見る →",retry:"再試行",back:"戻る",error:"エラー",noApiMsg:"ローカルコンテンツはフランス語です。プロフィールでAPIキーを追加して、あなたの言語でレッスンを生成してください。",correct:"✅ 正解！",wrong:"❌ 惜しい…",levelsCompleted:"レベル完了",typeCode:"コード",typeTheory:"理論 + クイズ",typeQuiz:"クイズ",replayLabel:"リプレイ"},
   };
 
   // ── Traductions écran résultat ────────────────────────────────────────────
@@ -2575,9 +2665,19 @@ function RoadLearn() {
     const rm = ROADMAPS.find(r => r.id === rmId);
     const sec = rm.sections[secIdx];
     const lv = sec.levels[lvlIdx];
-    setSteps(generateMockSteps(lv.name, sec.title));
+    const rawSteps = generateMockSteps(lv.name, sec.title);
+    setSteps(rawSteps);
+    setTSteps(null);
     setLoading(false);
     setScreen("lesson");
+    // Traduction automatique si langue ≠ français
+    if (lang !== 'fr') {
+      setTranslating(true);
+      translateStepsData(rawSteps, lang).then(translated => {
+        setTSteps(translated);
+        setTranslating(false);
+      }).catch(() => setTranslating(false));
+    }
   }
 
   function handleAnswer(idx) {
@@ -2853,7 +2953,7 @@ function RoadLearn() {
 
         {/* ── Daily Challenge ───────────────────────────────────────────── */}
         {(() => {
-          const dc = getDailyChallenge();
+          const dc = tDailyChallenge || getDailyChallenge();
           const today = new Date().toISOString().slice(0,10);
           const dcAlreadyDone = state.dailyChallenge && state.dailyChallenge.date === today && state.dailyChallenge.done;
           const letters = ["A","B","C","D"];
@@ -2922,7 +3022,7 @@ function RoadLearn() {
           ROADMAPS DISPONIBLES
         </div>
         <div style={{padding:'0 16px 20px', display:'flex', flexDirection:'column', gap:8}}>
-          {ROADMAPS.map(rm => {
+          {(tRoadmaps || ROADMAPS).map(rm => {
             let total = 0; rm.sections.forEach(s => total += s.levels.length);
             const done = (state.done[rm.id]||[]).length;
             const pct = total ? Math.round((done/total)*100) : 0;
@@ -3101,7 +3201,7 @@ function RoadLearn() {
         {/* Progression */}
         <div style={{fontSize:11, fontWeight:700, color: dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{(L_PROFILE[lang]||L_PROFILE.fr).progression}</div>
         <div style={{padding:'0 16px', marginBottom:16}}>
-          {ROADMAPS.map((rm,ri)=>{
+          {(tRoadmaps || ROADMAPS).map((rm,ri)=>{
             let total=0; rm.sections.forEach(s=>total+=s.levels.length);
             const done=(state.done[rm.id]||[]).length;
             const pct=total?Math.round((done/total)*100):0;
@@ -3217,7 +3317,8 @@ function RoadLearn() {
 
   // ── Niveaux ───────────────────────────────────────────────────────────────
   if (screen === "levels") {
-    const rm = ROADMAPS.find(r => r.id === curRM);
+    const activeRM = tRoadmaps || ROADMAPS;
+    const rm = activeRM.find(r => r.id === curRM);
     if (!rm) return null;
     let total = 0; rm.sections.forEach(s => total += s.levels.length);
     const done = (state.done[rm.id]||[]).length;
@@ -3239,7 +3340,7 @@ function RoadLearn() {
           <div style={{height:5, background: dark?'#2a2a2a':'#f3f4f6', borderRadius:99, overflow:'hidden'}}>
             <div className="progress-bar" style={{height:'100%', borderRadius:99, background:prog, width:`${pct}%`}}/>
           </div>
-          <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af', marginTop:4, fontWeight:500}}>{done}/{total} niveaux complétés</div>
+          <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af', marginTop:4, fontWeight:500}}>{done}/{total} {(L_LESSON[lang]||L_LESSON.fr).levelsCompleted}</div>
         </div>
 
         <div style={{flex:1, overflowY:'auto', padding:'0 16px 16px'}}>
@@ -3259,7 +3360,8 @@ function RoadLearn() {
                 const unlocked = isUnlocked(curRM,si,li);
                 const clickable = done || unlocked;
                 const isCur = !done && unlocked;
-                const typeLabel = lv.type.includes("code")?"Code":lv.type.includes("theory")?"Théorie + Quiz":"Quiz";
+                const ll = L_LESSON[lang]||L_LESSON.fr;
+                const typeLabel = lv.type.includes("code")?ll.typeCode:lv.type.includes("theory")?ll.typeTheory:ll.typeQuiz;
                 const typeIcon = lv.type.includes("code")?"💻":lv.type.includes("challenge")?"🎯":"📝";
                 return (
                   <React.Fragment key={li}>
@@ -3285,7 +3387,7 @@ function RoadLearn() {
                       <div style={{flex:1, minWidth:0}}>
                         <div style={{fontSize:13, fontWeight:600, color: dark?'#f9fafb':'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2}}>{lv.name}</div>
                         <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af'}}>
-                          {typeIcon} {typeLabel} · {lv.xp} XP{done&&<span style={{color: dark?'#34d399':'#059669', marginLeft:4}}>· Rejouer</span>}
+                          {typeIcon} {typeLabel} · {lv.xp} XP{done&&<span style={{color: dark?'#34d399':'#059669', marginLeft:4}}>· {ll.replayLabel}</span>}
                         </div>
                       </div>
                       <div style={{fontSize:11, fontWeight:700, flexShrink:0, color: done?(dark?'#34d399':'#059669'):(dark?'#60a5fa':'#1d4ed8')}}>
@@ -3305,9 +3407,10 @@ function RoadLearn() {
 
   // ── Leçon ─────────────────────────────────────────────────────────────────
   if (screen === "lesson") {
-    const total = steps.length || 7;
+    const activeSteps = tSteps || steps;
+    const total = activeSteps.length || 7;
     const pct = Math.round((stepIdx/total)*100);
-    const step = steps[stepIdx];
+    const step = activeSteps[stepIdx];
     const letters = ["A","B","C","D"];
     return (
       <PhoneFrame>
@@ -3324,8 +3427,9 @@ function RoadLearn() {
               ))}
             </div>
           </div>
-          <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af', fontWeight:500}}>
+          <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af', fontWeight:500, display:'flex', alignItems:'center', gap:6}}>
             {(()=>{const ll=L_LESSON[lang]||L_LESSON.fr;return loading?ll.loading:step?.type==="theory"?`📖 ${ll.lesson} ${stepIdx+1}/${total}`:`❓ ${ll.question} ${stepIdx+1}/${total}`;})()}
+            {translating && <span style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:99,background:dark?'#1e3a5f':'#eff6ff',color:dark?'#60a5fa':'#1d4ed8',animation:'pulse 1.2s ease-in-out infinite'}}>🌐 …</span>}
           </div>
         </div>
 
@@ -3358,31 +3462,27 @@ function RoadLearn() {
                 <div style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,fontWeight:700,padding:'4px 10px',borderRadius:8,background:dark?'#1e3a5f':'#eff6ff',color:dark?'#60a5fa':'#1d4ed8'}}>
                   <BookOpen size={12}/>{(L_LESSON[lang]||L_LESSON.fr).theory}
                 </div>
-                {'speechSynthesis' in window && (
-                  <button onClick={()=>speakText(step.content)}
-                    style={{display:'flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:20,border:'none',cursor:'pointer',fontSize:12,fontWeight:600,
-                      background:ttsPlaying?'#3b82f6':(dark?'#161616':'#f0f0f0'),
-                      color:ttsPlaying?'#fff':(dark?'#9ca3af':'#6b7280')}}>
-                    <span style={{fontSize:15}}>{ttsPlaying?'⏸':'🔊'}</span>
-                    {ttsPlaying?t.tts.stop:t.tts.listen}
-                  </button>
-                )}
+                <button onClick={()=>speakText(step.content)}
+                  style={{display:'flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:20,border:'none',cursor:'pointer',fontSize:12,fontWeight:600,
+                    background:ttsPlaying?'#3b82f6':(dark?'#161616':'#f0f0f0'),
+                    color:ttsPlaying?'#fff':(dark?'#9ca3af':'#6b7280')}}>
+                  <span style={{fontSize:15}}>{ttsPlaying?'⏸':'🔊'}</span>
+                  {ttsPlaying?t.tts.stop:t.tts.listen}
+                </button>
               </div>
               {/* Contrôle vitesse TTS */}
-              {'speechSynthesis' in window && (
-                <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:10}}>
-                  <Volume2 size={13} style={{color:dark?'#6b7280':'#9ca3af',flexShrink:0}}/>
-                  <span style={{fontSize:11,color:dark?'#6b7280':'#9ca3af',fontWeight:500,marginRight:4}}>{(L_LESSON[lang]||L_LESSON.fr).speed}</span>
-                  {[{v:0.65,l:'0.75×'},{v:0.9,l:'1×'},{v:1.15,l:'1.25×'},{v:1.4,l:'1.5×'}].map(({v,l})=>(
-                    <button key={v} onClick={()=>changeTtsSpeed(v)}
-                      style={{padding:'3px 9px',borderRadius:8,fontSize:11,fontWeight:600,cursor:'pointer',border:`1.5px solid ${ttsSpeed===v?(dark?'#3b82f6':'#3b82f6'):(dark?'#2a2a2a':'#e5e7eb')}`,
-                        background:ttsSpeed===v?'#3b82f6':(dark?'#161616':'white'),
-                        color:ttsSpeed===v?'white':(dark?'#9ca3af':'#6b7280')}}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:10}}>
+                <Volume2 size={13} style={{color:dark?'#6b7280':'#9ca3af',flexShrink:0}}/>
+                <span style={{fontSize:11,color:dark?'#6b7280':'#9ca3af',fontWeight:500,marginRight:4}}>{(L_LESSON[lang]||L_LESSON.fr).speed}</span>
+                {[{v:0.65,l:'0.75×'},{v:0.9,l:'1×'},{v:1.15,l:'1.25×'},{v:1.4,l:'1.5×'}].map(({v,l})=>(
+                  <button key={v} onClick={()=>changeTtsSpeed(v)}
+                    style={{padding:'3px 9px',borderRadius:8,fontSize:11,fontWeight:600,cursor:'pointer',border:`1.5px solid ${ttsSpeed===v?(dark?'#3b82f6':'#3b82f6'):(dark?'#2a2a2a':'#e5e7eb')}`,
+                      background:ttsSpeed===v?'#3b82f6':(dark?'#161616':'white'),
+                      color:ttsSpeed===v?'white':(dark?'#9ca3af':'#6b7280')}}>
+                    {l}
+                  </button>
+                ))}
+              </div>
               <div style={{background:dark?'#161616':'#f8faff',border:`1px solid ${dark?'#2a2a2a':'#dbeafe'}`,borderLeft:'4px solid #3b82f6',borderRadius:'0 14px 14px 0',padding:'14px 16px',fontSize:14,color:dark?'#d1d5db':'#374151',lineHeight:1.75,marginBottom:20}}>
                 {step.content}
               </div>
@@ -3394,7 +3494,7 @@ function RoadLearn() {
           {!loading&&!error&&step&&step.type!=="theory"&&(
             <div className="fade-in">
               {/* Rappel de cours */}
-              {steps[0]?.content && (
+              {activeSteps[0]?.content && (
                 <div style={{marginBottom:14}}>
                   <button onClick={()=>setShowTheory(!showTheory)}
                     style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',borderRadius:12,border:`1px solid ${dark?'#2a2a2a':'#e5e7eb'}`,background:dark?'#161616':'#f9fafb',cursor:'pointer',fontSize:12,fontWeight:600,color:dark?'#9ca3af':'#6b7280'}}>
@@ -3404,15 +3504,13 @@ function RoadLearn() {
                   {showTheory&&(
                     <div style={{marginTop:6,borderLeft:'4px solid #3b82f6',borderRadius:'0 12px 12px 0',padding:'10px 14px',background:dark?'#161616':'#f8faff',color:dark?'#d1d5db':'#374151',fontSize:13,lineHeight:1.65}}>
                       <div style={{display:'flex',justifyContent:'flex-end',marginBottom:8}}>
-                        {'speechSynthesis' in window&&(
-                          <button onClick={()=>speakText(steps[0].content)}
-                            style={{display:'flex',alignItems:'center',gap:4,padding:'4px 10px',borderRadius:16,border:'none',cursor:'pointer',fontSize:11,fontWeight:600,
-                              background:ttsPlaying?'#3b82f6':(dark?'#2a2a2a':'#e5e7eb'),color:ttsPlaying?'#fff':(dark?'#9ca3af':'#6b7280')}}>
-                            <span>{ttsPlaying?'⏸':'🔊'}</span>{ttsPlaying?t.tts.stop:t.tts.listen}
-                          </button>
-                        )}
+                        <button onClick={()=>speakText(activeSteps[0].content)}
+                          style={{display:'flex',alignItems:'center',gap:4,padding:'4px 10px',borderRadius:16,border:'none',cursor:'pointer',fontSize:11,fontWeight:600,
+                            background:ttsPlaying?'#3b82f6':(dark?'#2a2a2a':'#e5e7eb'),color:ttsPlaying?'#fff':(dark?'#9ca3af':'#6b7280')}}>
+                          <span>{ttsPlaying?'⏸':'🔊'}</span>{ttsPlaying?t.tts.stop:t.tts.listen}
+                        </button>
                       </div>
-                      {steps[0].content}
+                      {activeSteps[0].content}
                     </div>
                   )}
                 </div>
@@ -3696,21 +3794,19 @@ function RoadLearn() {
           </Section>
           <Section title={t.settings.appearance}>
             <Row label={t.settings.darkMode} right={<Toggle value={dark} onChange={toggleTheme}/>}/>
-            {'speechSynthesis' in window && (
-              <Row label={TTS_SPEED_LABEL[lang]||'Vitesse lecture TTS'} last sublabel={TTS_SPEED_SUB[lang]||'Vitesse de la synthèse vocale'} right={
-                <div style={{display:'flex', gap:4}}>
-                  {[{v:0.65,l:'0.75×'},{v:0.9,l:'1×'},{v:1.15,l:'1.25×'},{v:1.4,l:'1.5×'}].map(({v,l})=>(
-                    <button key={v} onClick={()=>changeTtsSpeed(v)}
-                      style={{padding:'4px 8px', borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer',
-                        border:`1.5px solid ${ttsSpeed===v?'#3b82f6':(dark?'#2a2a2a':'#e5e7eb')}`,
-                        background:ttsSpeed===v?'#3b82f6':(dark?bgPwa:bgPwa),
-                        color:ttsSpeed===v?'white':txtPwa}}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              }/>
-            )}
+            <Row label={TTS_SPEED_LABEL[lang]||'Vitesse lecture TTS'} last sublabel={TTS_SPEED_SUB[lang]||'Vitesse de la synthèse vocale'} right={
+              <div style={{display:'flex', gap:4}}>
+                {[{v:0.65,l:'0.75×'},{v:0.9,l:'1×'},{v:1.15,l:'1.25×'},{v:1.4,l:'1.5×'}].map(({v,l})=>(
+                  <button key={v} onClick={()=>changeTtsSpeed(v)}
+                    style={{padding:'4px 8px', borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer',
+                      border:`1.5px solid ${ttsSpeed===v?'#3b82f6':(dark?'#2a2a2a':'#e5e7eb')}`,
+                      background:ttsSpeed===v?'#3b82f6':(dark?bgPwa:bgPwa),
+                      color:ttsSpeed===v?'white':txtPwa}}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            }/>
           </Section>
           <Section title={t.settings.notifications}>
             {notifPerm!=='granted'&&(
