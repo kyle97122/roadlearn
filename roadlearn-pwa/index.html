@@ -1859,6 +1859,10 @@ function detectTopicKey(levelName) {
   if (n.includes("promise") || n.includes("async") || n.includes("await")) return "async";
   if (n.includes("module") && (n.includes("es") || n.includes("js"))) return "js-modules";
   if (n.includes("fonctions") || n.includes("scope") || n.includes("closure") || (n.includes("js") && n.includes("fonction"))) return "js-functions";
+  // ── Vue.js / TypeScript (avant le catch-all JS pour éviter le clash "type" dans "typescript") ──
+  if (n.includes("vue.js") || n.includes("vuejs") || n.includes("vue —")) return "vuejs";
+  if (n.includes("typescript") || n.includes("types &") || n.includes("interface")) return "typescript";
+
   if (n.includes("javascript") || n.includes("js —") || n.includes("variable") || n.includes("type")) return "javascript";
 
   // ── React ──
@@ -1866,10 +1870,6 @@ function detectTopicKey(levelName) {
   if (n.includes("react") && (n.includes("state") || n.includes("props") || n.includes("context"))) return "react-state";
   if (n.includes("react") || n.includes("jsx") || n.includes("composant")) return "react";
   if (n.includes("crud") && (n.includes("react") || n.includes("node"))) return "react";
-
-  // ── Vue.js / TypeScript ──
-  if (n.includes("vue.js") || n.includes("vuejs") || n.includes("vue —")) return "vuejs";
-  if (n.includes("typescript") || n.includes("types &") || n.includes("interface")) return "typescript";
 
   // ── Express (avant Node.js pour éviter le catch-all nodejs) ──
   if (n.includes("express")) return "express";
