@@ -2216,12 +2216,12 @@ const LB_INIT = [
 ];
 
 function userLevel(xp) {
-  if (xp < 100) return { n:1, t:"Débutant", next:100 };
-  if (xp < 300) return { n:2, t:"Apprenti", next:300 };
-  if (xp < 600) return { n:3, t:"Intermédiaire", next:600 };
-  if (xp < 1000) return { n:4, t:"Avancé", next:1000 };
-  if (xp < 1500) return { n:5, t:"Expert", next:1500 };
-  return { n:6, t:"Maître", next:2000 };
+  if (xp < 100)  return { n:1, next:100 };
+  if (xp < 300)  return { n:2, next:300 };
+  if (xp < 600)  return { n:3, next:600 };
+  if (xp < 1000) return { n:4, next:1000 };
+  if (xp < 1500) return { n:5, next:1500 };
+  return { n:6, next:2000 };
 }
 
 // ── Audio feedback (Web Audio API, aucun fichier externe) ────────────────────
@@ -2950,7 +2950,7 @@ function RoadLearn() {
             }}>{avatarLetter}</div>
             <div style={{flex:1}}>
               <div style={{fontSize:15, fontWeight:600, color: dark?'#f9fafb':'#111827'}}>{username}</div>
-              <div style={{fontSize:12, color: dark?'#93c5fd':'#3b82f6', fontWeight:500}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]||ul.t}</div>
+              <div style={{fontSize:12, color: dark?'#93c5fd':'#3b82f6', fontWeight:500}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]}</div>
             </div>
           </div>
           <div style={{marginTop:10}}>
@@ -3261,7 +3261,7 @@ function RoadLearn() {
               <button onClick={()=>{setEditingUsername(true);setUsernameInput(username);}} style={{color: dark?'#6b7280':'#9ca3af', padding:2}}><Edit2 size={13}/></button>
             </div>
           )}
-          <div style={{fontSize:12, color: dark?'#6b7280':'#9ca3af', marginTop:4, fontWeight:500}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]||ul.t}</div>
+          <div style={{fontSize:12, color: dark?'#6b7280':'#9ca3af', marginTop:4, fontWeight:500}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]}</div>
         </div>
 
         {/* Stats */}
