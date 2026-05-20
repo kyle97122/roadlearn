@@ -150,11 +150,10 @@
   .dark .dc-btn-wrong   { background:#450a0a !important; border-color:#b91c1c !important; color:#fca5a5 !important; }
 </style>
 <script>
-  // Anti-flash thème : applique le thème sauvegardé ou détecte la préférence système
+  // Anti-flash thème : applique la préférence système automatiquement
   (function() {
     try {
-      var saved = localStorage.getItem('rl_theme');
-      var t = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      var t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', t);
       if (t === 'dark') document.documentElement.classList.add('dark');
     } catch(e) {}
@@ -2320,8 +2319,6 @@ function RoadLearn() {
   const [resultData, setResultData] = useState(null);
   const [dark, setDark] = useState(() => {
     try {
-      const saved = localStorage.getItem('rl_theme');
-      if (saved) return saved === 'dark';
       return window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
     } catch(_) { return false; }
   });
@@ -2349,10 +2346,9 @@ function RoadLearn() {
       if (metaTheme) metaTheme.content = isDark ? '#070707' : '#6366f1';
     }
     try {
-      const savedTheme = localStorage.getItem('rl_theme');
-      const isDark = savedTheme
-        ? savedTheme === 'dark'
-        : (window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false);
+      // Efface toute préférence sauvegardée manuellement (mode automatique uniquement)
+      localStorage.removeItem('rl_theme');
+      const isDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
       applyTheme(isDark);
       const savedLang = localStorage.getItem('rl_lang');
       if (savedLang && TRANSLATIONS[savedLang]) setLang(savedLang);
@@ -2363,28 +2359,16 @@ function RoadLearn() {
       const savedPhoto = localStorage.getItem('rl_photo');
       if (savedPhoto) setProfilePhoto(savedPhoto);
     } catch(_) {}
-    // Listener pour changements de préférence système (si pas de préférence sauvegardée)
+    // Listener pour changements de préférence système (toujours actif)
     const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
     if (mq && mq.addEventListener) {
-      const handler = e => { if (!localStorage.getItem('rl_theme')) applyTheme(e.matches); };
+      const handler = e => applyTheme(e.matches);
       mq.addEventListener('change', handler);
       return () => mq.removeEventListener('change', handler);
     }
   }, []);
 
-  function toggleTheme() {
-    const nd = !dark;
-    setDark(nd);
-    document.documentElement.classList.toggle('dark', nd);
-    document.documentElement.setAttribute('data-theme', nd ? 'dark' : 'light');
-    try {
-      localStorage.setItem('rl_theme', nd ? 'dark' : 'light');
-      const metaTheme = document.getElementById('theme-color-meta');
-      if (metaTheme) metaTheme.content = nd ? '#070707' : '#3b82f6';
-    } catch(_) {}
-  }
-
-  function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang', code); } catch(_) {} }
+function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang', code); } catch(_) {} }
   function changeTtsSpeed(s) { setTtsSpeed(s); try { localStorage.setItem('rl_tts_speed', String(s)); } catch(_) {} }
 
   function handlePhotoChange(e) {
@@ -2603,15 +2587,6 @@ function RoadLearn() {
   }, [lang]);
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.fr;
-
-  const ThemeToggle = () => (
-    <button onClick={toggleTheme}
-      className="theme-toggle-btn"
-      title={dark ? (t.settings?.toLightMode||"Passer en mode clair") : (t.settings?.toDarkMode||"Passer en mode sombre")}
-      aria-label={dark ? (t.settings?.toLightMode||"Passer en mode clair") : (t.settings?.toDarkMode||"Passer en mode sombre")}>
-      {dark ? <Sun size={16}/> : <Moon size={16}/>}
-    </button>
-  );
 
   // ── Confetti overlay ──────────────────────────────────────────────────────
   const ConfettiOverlay = () => {
@@ -3000,7 +2975,6 @@ function RoadLearn() {
             style={{display:'flex', alignItems:'center', gap:4, background: dark?'rgba(245,158,11,0.12)':'#fef9e7', color: dark?'#fbbf24':'#b45309', borderRadius:99, padding:'5px 10px', fontSize:11, fontWeight:700, cursor:'default'}}>
             <Flame size={11}/><span>{state.streak}🔥{state.streak>=7?' 🌟':''}</span>
           </div>
-          <ThemeToggle/>
         </div>
       </div>
 
@@ -3226,7 +3200,6 @@ function RoadLearn() {
       <PhoneFrame>
         <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
           <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>🏆 {t.nav?.lb||'Classement'}</div>
-          <ThemeToggle/>
         </div>
         <div style={{flex:1, overflowY:'auto', padding:'12px 16px 16px'}}>
           {sorted.map((u,i) => (
@@ -3272,7 +3245,6 @@ function RoadLearn() {
               {earnedCount}/{BADGES.length} {(L_BADGES[lang]||L_BADGES.fr).count}
             </div>
           </div>
-          <ThemeToggle/>
         </div>
         <div style={{flex:1, overflowY:'auto'}}>
           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, padding:'12px 16px 20px'}}>
@@ -3309,7 +3281,6 @@ function RoadLearn() {
     <PhoneFrame>
       <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
         <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>{(L_PROFILE[lang]||L_PROFILE.fr).title}</div>
-        <ThemeToggle/>
       </div>
       <div style={{flex:1, overflowY:'auto'}}>
         {/* Avatar + nom */}
@@ -3460,12 +3431,6 @@ function RoadLearn() {
         {/* ── Apparence ───────────────────────────────────────────────────── */}
         <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.settings.appearance}</div>
         <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-            <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{t.settings.darkMode}</div>
-            <div onClick={toggleTheme} style={{width:46,height:26,borderRadius:13,position:'relative',cursor:'pointer',flexShrink:0,background:dark?'#6366f1':'#d1d5db',transition:'background 0.2s',boxShadow:dark?'0 0 8px rgba(99,102,241,0.4)':'none'}}>
-              <div style={{position:'absolute',top:3,left:dark?23:3,width:20,height:20,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 4px rgba(0,0,0,.25)',transition:'left 0.2s'}}/>
-            </div>
-          </div>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px'}}>
             <div>
               <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{TTS_SPEED_LABEL[lang]||'Vitesse TTS'}</div>
@@ -3567,7 +3532,6 @@ function RoadLearn() {
             <div style={{display:'flex', alignItems:'center', gap:4, background: dark?'#1e3a5f':'#eff6ff', color: dark?'#60a5fa':'#1d4ed8', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:600}}>
               <Zap size={11}/><span>{state.xp} XP</span>
             </div>
-            <ThemeToggle/>
           </div>
           <div style={{height:5, background: dark?'#2a2a2a':'#f3f4f6', borderRadius:99, overflow:'hidden'}}>
             <div className="progress-bar" style={{height:'100%', borderRadius:99, background:prog, width:`${pct}%`}}/>
