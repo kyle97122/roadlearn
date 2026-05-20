@@ -2722,6 +2722,7 @@ function RoadLearn() {
   const [profilePhoto, setProfilePhoto] = useState(null); // base64 data URL ou null
   const photoInputRef = React.useRef(null);
   const motivDismissed = React.useRef(false);
+  const [onboardStep, setOnboardStep] = useState(null); // null=skip, 0/1/2=slides onboarding
 
   // ── Thème + langue + notifications ────────────────────────────────────────
   useEffect(() => {
@@ -3161,7 +3162,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
   function handleClaimMission(mId, xpReward) {
     setState(s => ({ ...s, xp: s.xp + xpReward, missionsXpClaimed: [...(s.missionsXpClaimed||[]), mId] }));
   }
-  function handleStart() { const name = usernameInput.trim() || "Joueur"; setUsername(name); setHasStarted(true); }
+  function handleStart() { const name = usernameInput.trim() || "Joueur"; setUsername(name); setHasStarted(true); setOnboardStep(0); }
   function saveUsername() { const t = usernameInput.trim(); if (!t) return; setUsername(t); setEditingUsername(false); }
 
   // ── Google Sign-In ─────────────────────────────────────────────────────────
@@ -3486,6 +3487,64 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     </PhoneFrame>
   );
 
+  // ── Onboarding slides ─────────────────────────────────────────────────────
+  const ONBOARD_SLIDES = [
+    { icon:'🗺️', title: lang==='en'?'Follow a path':lang==='es'?'Sigue un camino':'Suis un parcours',
+      sub: lang==='en'?'HTML, CSS, JS, React, SQL — structured from A to Z.':lang==='es'?'HTML, CSS, JS, React, SQL — del nivel básico al avanzado.':'HTML, CSS, JS, React, SQL — du niveau débutant au expert.', color:'#6366f1' },
+    { icon:'❓', title: lang==='en'?'Answer quizzes':lang==='es'?'Responde los quizzes':'Réponds aux quiz',
+      sub: lang==='en'?'Multiple choice questions, no typing needed. Quick and effective.':lang==='es'?'Preguntas de opción múltiple, rápidas y eficaces.':'Questions à choix multiple, rapides et efficaces. Zéro clavier.', color:'#8b5cf6' },
+    { icon:'📈', title: lang==='en'?'Progress every day':lang==='es'?'Progresa cada día':'Progresse chaque jour',
+      sub: lang==='en'?'Earn XP, maintain your streak, and reach your daily goal.':lang==='es'?'Gana XP, mantén tu racha y alcanza tu objetivo diario.':'Gagne des XP, maintiens ta série et atteins ton objectif du jour.', color:'#f59e0b' },
+  ];
+  if (onboardStep !== null && onboardStep >= 0 && onboardStep < ONBOARD_SLIDES.length) {
+    const sl = ONBOARD_SLIDES[onboardStep];
+    const isLast = onboardStep === ONBOARD_SLIDES.length - 1;
+    return (
+      <PhoneFrame>
+        <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'space-between', padding:'48px 28px 36px', overflowY:'auto'}}>
+          {/* Skip */}
+          <div style={{width:'100%', display:'flex', justifyContent:'flex-end'}}>
+            <button onClick={() => setOnboardStep(null)} style={{background:'none', border:'none', fontSize:13, color: dark?'#52525b':'#94a3b8', cursor:'pointer', padding:'4px 0'}}>
+              {lang==='en'?'Skip':lang==='es'?'Omitir':'Passer'}
+            </button>
+          </div>
+
+          {/* Content */}
+          <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', gap:0}}>
+            <div className="bounce-in" style={{width:110, height:110, borderRadius:36,
+              background:`linear-gradient(135deg,${sl.color},${sl.color}cc)`,
+              display:'flex', alignItems:'center', justifyContent:'center', fontSize:52,
+              boxShadow:`0 20px 50px ${sl.color}55`, marginBottom:32}}>
+              {sl.icon}
+            </div>
+            <div style={{fontSize:26, fontWeight:800, color: dark?'#fafafa':'#0f172a', letterSpacing:-0.8, lineHeight:1.2, marginBottom:14}}>{sl.title}</div>
+            <div style={{fontSize:15, color: dark?'#a1a1aa':'#64748b', lineHeight:1.65, maxWidth:270}}>{sl.sub}</div>
+          </div>
+
+          {/* Dots */}
+          <div style={{display:'flex', gap:7, marginBottom:28}}>
+            {ONBOARD_SLIDES.map((_,i) => (
+              <div key={i} style={{
+                width: i===onboardStep?22:7, height:7, borderRadius:99,
+                background: i===onboardStep?sl.color:(dark?'#3f3f46':'#e2e8f0'),
+                transition:'width 0.3s, background 0.3s'
+              }}/>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <button onClick={() => isLast ? setOnboardStep(null) : setOnboardStep(s => s+1)}
+            style={{width:'100%', padding:'16px 0', borderRadius:16, border:'none', cursor:'pointer',
+              background:`linear-gradient(135deg,${sl.color},${sl.color}bb)`,
+              color:'white', fontSize:16, fontWeight:700, letterSpacing:-0.2,
+              boxShadow:`0 8px 28px ${sl.color}55`}}>
+            {isLast ? (lang==='en'?"Let's go 🚀":lang==='es'?'Empezar 🚀':"C'est parti 🚀") : (lang==='en'?'Next →':lang==='es'?'Siguiente →':'Suivant →')}
+          </button>
+        </div>
+      </PhoneFrame>
+    );
+  }
+
   // ── Accueil ───────────────────────────────────────────────────────────────
   if (screen === "home") return (
     <PhoneFrame>
@@ -3524,38 +3583,6 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             </div>
           );
         })()}
-        {/* Profil + niveau */}
-        <div style={{margin:'8px 16px 12px', padding:'16px', borderRadius:20,
-          background: dark?'linear-gradient(135deg,#18183a,#1e1b4b)':'linear-gradient(135deg,#eef2ff,#f0f9ff)',
-          border:`1px solid ${dark?'#2d2a6a':'#c7d2fe'}`,
-          boxShadow: dark?'0 4px 20px rgba(99,102,241,0.1)':'0 4px 20px rgba(99,102,241,0.08)'}}>
-          <div style={{display:'flex', alignItems:'center', gap:12}}>
-            {profilePhoto ? (
-              <img src={profilePhoto} alt="" style={{width:50,height:50,borderRadius:'50%',objectFit:'cover',flexShrink:0,boxShadow:'0 4px 14px rgba(99,102,241,0.4)'}}/>
-            ) : (
-              <div style={{
-                width:50, height:50, borderRadius:'50%', flexShrink:0,
-                background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
-                display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:19, fontWeight:700, color:'white',
-                boxShadow:'0 4px 14px rgba(99,102,241,0.4)'
-              }}>{avatarLetter}</div>
-            )}
-            <div style={{flex:1}}>
-              <div style={{fontSize:15, fontWeight:700, color: dark?'#fafafa':'#0f172a', letterSpacing:-0.2}}>{username}</div>
-              <div style={{fontSize:12, color: dark?'#a5b4fc':'#6366f1', fontWeight:600, marginTop:1}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]}</div>
-            </div>
-          </div>
-          <div style={{marginTop:12}}>
-            <div style={{height:7, background: dark?'rgba(99,102,241,0.2)':'#c7d2fe', borderRadius:99, overflow:'hidden'}}>
-              <div className="progress-bar" style={{height:'100%', borderRadius:99, background:'linear-gradient(90deg,#6366f1,#8b5cf6)', width:`${xpPct}%`}}/>
-            </div>
-            <div style={{display:'flex', justifyContent:'space-between', fontSize:11, color: dark?'#a5b4fc':'#6366f1', marginTop:5, fontWeight:600}}>
-              <span>{state.xp} XP</span><span>{ul.next} XP → {t.home?.nextLvl||'niv.'} {ul.n+1}</span>
-            </div>
-          </div>
-        </div>
-
         {/* Streak milestone banner */}
         {[7,14,30,60,100].includes(state.streak) && (
           <div className="slide-up" style={{margin:'0 16px 10px', padding:'10px 14px', borderRadius:14,
@@ -3605,25 +3632,6 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
 
         {/* Welcome back banner */}
         <WelcomeBackBanner />
-
-        {/* Stats */}
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, padding:'0 16px', marginBottom:16}}>
-          {[{v:state.xp,l:t.home?.xpTotal||'XP totaux',icon:'⚡',c:dark?'rgba(99,102,241,0.12)':'#eef2ff',tc:dark?'#a5b4fc':'#4f46e5',bd:dark?'rgba(99,102,241,0.15)':'#e0e7ff'},
-            {v:state.lvlDone,l:(L_PROFILE[lang]||L_PROFILE.fr).levels,icon:'✅',c:dark?'rgba(5,150,105,0.12)':'#f0fdf4',tc:dark?'#6ee7b7':'#059669',bd:dark?'rgba(5,150,105,0.2)':'#d1fae5'},
-            {v:`${state.streak}`,l:t.home?.days||'Jours',icon:'🔥',c:dark?'rgba(245,158,11,0.12)':'#fef9e7',tc:dark?'#fbbf24':'#b45309',bd:dark?'rgba(245,158,11,0.2)':'#fde68a'}
-          ].map((s,i)=>(
-            <div key={i} className="card-hover" style={{
-              background: s.c,
-              border:`1px solid ${s.bd}`,
-              borderRadius:16, padding:'14px 6px', textAlign:'center',
-              boxShadow: dark?'none':`0 2px 8px ${s.bd}`
-            }}>
-              <div style={{fontSize:22, marginBottom:4}}>{s.icon}</div>
-              <div style={{fontSize:19, fontWeight:800, color: s.tc, letterSpacing:-0.5, lineHeight:1}}>{s.v}</div>
-              <div style={{fontSize:10, color: dark?'#52525b':'#94a3b8', marginTop:4, fontWeight:500}}>{s.l}</div>
-            </div>
-          ))}
-        </div>
 
         {/* ── Reprendre (prochain niveau débloqué) ──────────────────────── */}
         {(() => {
@@ -4199,7 +4207,13 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         </div>
 
         <div className='scroll-y' style={{flex:1, overflowY:'auto', padding:'0 16px 16px'}}>
-          {rm.sections.map((sec,si)=>(
+          {(() => {
+            let _firstCurFi = -1;
+            rm.sections.forEach((sec,si) => sec.levels.forEach((_,li) => {
+              if (_firstCurFi === -1 && !isDone(curRM,si,li) && isUnlocked(curRM,si,li))
+                _firstCurFi = getLevelIdx(curRM,si,li);
+            }));
+            return rm.sections.map((sec,si) => (
             <div key={si} style={{marginBottom:16}}>
               <div style={{
                 fontSize:10, fontWeight:800, color: dark?'#6b7280':'#9ca3af',
@@ -4215,6 +4229,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                 const unlocked = isUnlocked(curRM,si,li);
                 const clickable = done || unlocked;
                 const isCur = !done && unlocked;
+                const isFirst = fi === _firstCurFi;
                 const ll = L_LESSON[lang]||L_LESSON.fr;
                 const typeLabel = lv.type.includes("code")?ll.typeCode:lv.type.includes("theory")?ll.typeTheory:ll.typeQuiz;
                 const typeIcon = lv.type.includes("code")?"💻":lv.type.includes("challenge")?"🎯":"📝";
@@ -4249,12 +4264,21 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                         {done?<RefreshCw size={14}/>:`+${lv.xp} XP`}
                       </div>
                     </button>
+                    {isFirst && (
+                      <div style={{display:'flex', alignItems:'center', gap:5, marginLeft:4, marginBottom:4, marginTop:-2}}>
+                        <span style={{fontSize:10}}>👆</span>
+                        <span style={{fontSize:10, fontWeight:700, color: dark?'#60a5fa':'#3b82f6'}}>
+                          {lang==='en'?'Start here':lang==='es'?'Empieza aquí':'Commence ici'}
+                        </span>
+                      </div>
+                    )}
                     {li<sec.levels.length-1&&<div style={{width:2, height:6, marginLeft:29, borderRadius:99, background: done?(dark?'#059669':'#6ee7b7'):(dark?'#2a2a2a':'#e5e7eb'), marginBottom:4}}/>}
                   </React.Fragment>
                 );
               })}
             </div>
-          ))}
+          ));
+          })()}
         </div>
       </PhoneFrame>
     );
