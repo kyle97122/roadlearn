@@ -428,6 +428,11 @@ const MOCK_DB = {
       { q: "`const` empêche-t-il toute modification ?", answers: ["Non, seule la référence ne peut être réassignée.", "Oui.", "Parfois.", "Ça dépend."], correct: 0, explanation: "const empêche la réassignation de la variable, mais l'objet/tableau référencé peut être muté.", difficulty: 2 },
       { q: "`===` est-il une comparaison stricte ?", answers: ["Non.", "Parfois.", "Oui.", "Ça dépend."], correct: 2, explanation: "=== compare valeur ET type sans coercition. C'est la comparaison stricte.", difficulty: 1 },
       { q: "`null` est-il un type primitif ?", answers: ["Non.", "Parfois.", "Ça dépend.", "Oui."], correct: 3, explanation: "null est un type primitif en JS, bien que typeof null retourne 'object' (bug historique).", difficulty: 2 },
+      { q: "Quel est le bug dans : `const arr = [1,2,3]; arr.foreach(x => console.log(x));` ?", answers: ["`arr` n'est pas un tableau.", "`foreach` n'existe pas, c'est `forEach` (F majuscule).", "`console.log` n'est pas disponible.", "La flèche `=>` est incorrecte."], correct: 1, explanation: "JavaScript est sensible à la casse : Array.prototype.forEach (F majuscule). `foreach` n'existe pas et lève une TypeError.", difficulty: 2 },
+      { q: "Quel est le bug : `if (x = 5) { console.log('cinq'); }` ?", answers: ["5 n'est pas un boolean.", "Il manque des accolades.", "`=` est une affectation, pas une comparaison. Utiliser `===`.", "`console.log` est mal orthographié."], correct: 2, explanation: "`x = 5` affecte 5 à x et vaut 5 (truthy). Il faut `x === 5` pour comparer.", difficulty: 2 },
+      { q: "Pourquoi `0.1 + 0.2 === 0.3` est `false` en JS ?", answers: ["Bug de JavaScript.", "Les flottants IEEE 754 ne représentent pas exactement tous les décimaux.", "`===` ne compare pas les nombres.", "+` n'est pas supporté pour les décimaux."], correct: 1, explanation: "0.1 + 0.2 = 0.30000000000000004 en virgule flottante. Utiliser Math.abs(a-b) < Number.EPSILON pour comparer.", difficulty: 2 },
+      { q: "Quel est le bug : `async function fetch() { const data = await getUser(); console.log(data); }` suivi de `fetch();` ?", answers: ["On ne peut pas nommer une fonction `fetch`.", "Il manque `return`.", "Il manque `try/catch` pour les erreurs.", "Pas de bug, c'est valide."], correct: 0, explanation: "`fetch` est une fonction native du navigateur. La redéfinir masque l'API native. Renommer en `fetchUser()` par exemple.", difficulty: 3 },
+      { q: "Quel est le bug : `const [user, setUser] = useState(); setUser({name: 'Alice'});` ?", answers: ["On ne peut pas passer un objet à `useState`.", "`useState` sans valeur initiale retourne `undefined`. Pas de bug si c'est intentionnel, mais peut causer des accès null.", "`setUser` ne peut pas être appelée directement.", "La déstructuration est incorrecte."], correct: 1, explanation: "`useState()` initialise à `undefined`. Si le code accède à `user.name` avant `setUser`, il aura une TypeError. Utiliser `useState(null)` ou `useState({name:''})`.", difficulty: 2 },
     ],
   },
   "js-functions": {
@@ -2205,18 +2210,24 @@ const BADGES = [
       return (s.done[rm.id]||[]).length>=total;
     });
   }},
+  { icon:"🌐", name:"REST Master",    desc:"HTTP & API REST maîtrisés",  check:(s)=>(s.done['backend']||[]).length>=2 },
+  { icon:"🗄️", name:"SQL Expert",     desc:"5 niveaux SQL maîtrisés",    check:(s)=>(s.done['sql']||[]).length>=5 },
+  { icon:"⚛️", name:"React Builder",  desc:"6 niveaux Frontend maîtrisés",check:(s)=>(s.done['frontend']||[]).length>=6 },
+  { icon:"🐳", name:"DevOps Hero",    desc:"8 niveaux DevOps maîtrisés", check:(s)=>(s.done['devops']||[]).length>=8 },
+  { icon:"🤖", name:"IA Pioneer",     desc:"5 niveaux IA maîtrisés",     check:(s)=>(s.done['ai']||[]).length>=5 },
+  { icon:"💳", name:"Stripe Builder", desc:"7 niveaux Full Stack maîtrisés", check:(s)=>(s.done['fullstack']||[]).length>=7 },
 ];
 
 // ── Traductions statiques des badges (zéro quota) ────────────────────────
 const BADGE_TRANS = {
-  fr:[{n:"Premier pas",d:"Terminer 1 niveau"},{n:"En feu",d:"5 niveaux terminés"},{n:"Diamant",d:"Atteindre 300 XP"},{n:"Champion",d:"15 niveaux terminés"},{n:"Expert",d:"Atteindre 1000 XP"},{n:"Précis",d:"5 quiz parfaits"},{n:"Studieux",d:"30 niveaux terminés"},{n:"Rapide",d:"Atteindre 500 XP"},{n:"7 jours !",d:"7 jours de série consécutifs"},{n:"Mois entier",d:"30 jours de série"},{n:"Défi du jour",d:"Compléter le Daily Challenge"},{n:"Streak record",d:"Record de série > 10 jours"},{n:"Persévérant",d:"Rejouer un niveau après échec"},{n:"Perfect x10",d:"10 quiz parfaits"},{n:"Touche-à-tout",d:"3 roadmaps commencées"},{n:"Diplômé",d:"Terminer entièrement 1 roadmap"}],
-  en:[{n:"First step",d:"Complete 1 level"},{n:"On fire",d:"5 levels completed"},{n:"Diamond",d:"Reach 300 XP"},{n:"Champion",d:"15 levels completed"},{n:"Expert",d:"Reach 1000 XP"},{n:"Sharp",d:"5 perfect quizzes"},{n:"Studious",d:"30 levels completed"},{n:"Fast",d:"Reach 500 XP"},{n:"7 days!",d:"7 consecutive day streak"},{n:"Full month",d:"30-day streak"},{n:"Daily challenge",d:"Complete the Daily Challenge"},{n:"Streak record",d:"Streak record > 10 days"},{n:"Persistent",d:"Replay a level after failure"},{n:"Perfect x10",d:"10 perfect quizzes"},{n:"Generalist",d:"3 roadmaps started"},{n:"Graduate",d:"Fully complete 1 roadmap"}],
-  es:[{n:"Primer paso",d:"Completar 1 nivel"},{n:"En llamas",d:"5 niveles completados"},{n:"Diamante",d:"Alcanzar 300 XP"},{n:"Campeón",d:"15 niveles completados"},{n:"Experto",d:"Alcanzar 1000 XP"},{n:"Preciso",d:"5 cuestionarios perfectos"},{n:"Estudioso",d:"30 niveles completados"},{n:"Rápido",d:"Alcanzar 500 XP"},{n:"¡7 días!",d:"7 días de racha consecutivos"},{n:"Mes completo",d:"30 días de racha"},{n:"Desafío del día",d:"Completar el Desafío Diario"},{n:"Récord de racha",d:"Récord de racha > 10 días"},{n:"Perseverante",d:"Repetir un nivel tras un fallo"},{n:"Perfecto x10",d:"10 cuestionarios perfectos"},{n:"Polivalente",d:"3 rutas iniciadas"},{n:"Graduado",d:"Completar 1 ruta completamente"}],
-  pt:[{n:"Primeiro passo",d:"Concluir 1 nível"},{n:"Em chamas",d:"5 níveis concluídos"},{n:"Diamante",d:"Atingir 300 XP"},{n:"Campeão",d:"15 níveis concluídos"},{n:"Especialista",d:"Atingir 1000 XP"},{n:"Preciso",d:"5 quizzes perfeitos"},{n:"Estudioso",d:"30 níveis concluídos"},{n:"Rápido",d:"Atingir 500 XP"},{n:"7 dias!",d:"7 dias de sequência consecutivos"},{n:"Mês inteiro",d:"30 dias de sequência"},{n:"Desafio do dia",d:"Completar o Desafio Diário"},{n:"Recorde de sequência",d:"Recorde > 10 dias"},{n:"Perseverante",d:"Jogar novamente após falha"},{n:"Perfeito x10",d:"10 quizzes perfeitos"},{n:"Curioso",d:"3 trilhas iniciadas"},{n:"Formado",d:"Concluir 1 trilha completamente"}],
-  de:[{n:"Erster Schritt",d:"1 Level abschließen"},{n:"Auf Feuer",d:"5 Level abgeschlossen"},{n:"Diamant",d:"300 XP erreichen"},{n:"Champion",d:"15 Level abgeschlossen"},{n:"Experte",d:"1000 XP erreichen"},{n:"Präzise",d:"5 perfekte Quizze"},{n:"Fleißig",d:"30 Level abgeschlossen"},{n:"Schnell",d:"500 XP erreichen"},{n:"7 Tage!",d:"7 aufeinanderfolgende Tage"},{n:"Ganzer Monat",d:"30-Tage-Serie"},{n:"Tagesaufgabe",d:"Tägliche Aufgabe abschließen"},{n:"Serien-Rekord",d:"Serienrekord > 10 Tage"},{n:"Ausdauernd",d:"Level nach Misserfolg wiederholen"},{n:"Perfekt x10",d:"10 perfekte Quizze"},{n:"Allrounder",d:"3 Roadmaps begonnen"},{n:"Absolvent",d:"1 Roadmap vollständig abschließen"}],
-  it:[{n:"Primo passo",d:"Completare 1 livello"},{n:"In fiamme",d:"5 livelli completati"},{n:"Diamante",d:"Raggiungere 300 XP"},{n:"Campione",d:"15 livelli completati"},{n:"Esperto",d:"Raggiungere 1000 XP"},{n:"Preciso",d:"5 quiz perfetti"},{n:"Studioso",d:"30 livelli completati"},{n:"Veloce",d:"Raggiungere 500 XP"},{n:"7 giorni!",d:"7 giorni di serie consecutivi"},{n:"Mese intero",d:"30 giorni di serie"},{n:"Sfida del giorno",d:"Completare la Sfida Quotidiana"},{n:"Record serie",d:"Record di serie > 10 giorni"},{n:"Perseverante",d:"Rigiocare un livello dopo un fallimento"},{n:"Perfetto x10",d:"10 quiz perfetti"},{n:"Tuttofare",d:"3 percorsi iniziati"},{n:"Diplomato",d:"Completare 1 percorso interamente"}],
-  nl:[{n:"Eerste stap",d:"1 niveau afronden"},{n:"In vuur",d:"5 niveaus afgerond"},{n:"Diamant",d:"300 XP bereiken"},{n:"Kampioen",d:"15 niveaus afgerond"},{n:"Expert",d:"1000 XP bereiken"},{n:"Nauwkeurig",d:"5 perfecte quizzen"},{n:"Studeus",d:"30 niveaus afgerond"},{n:"Snel",d:"500 XP bereiken"},{n:"7 dagen!",d:"7 opeenvolgende dagen reeks"},{n:"Hele maand",d:"30-dagenreeks"},{n:"Dagelijkse uitdaging",d:"De dagelijkse uitdaging voltooien"},{n:"Reeksrecord",d:"Reeksrecord > 10 dagen"},{n:"Volhardend",d:"Niveau herspelen na mislukking"},{n:"Perfect x10",d:"10 perfecte quizzen"},{n:"Veelzijdig",d:"3 roadmaps gestart"},{n:"Afgestudeerd",d:"1 roadmap volledig afronden"}],
-  ja:[{n:"第一歩",d:"1レベルをクリア"},{n:"炎上中",d:"5レベルクリア"},{n:"ダイヤモンド",d:"300XP達成"},{n:"チャンピオン",d:"15レベルクリア"},{n:"エキスパート",d:"1000XP達成"},{n:"精確",d:"5回パーフェクト"},{n:"勤勉",d:"30レベルクリア"},{n:"スピード",d:"500XP達成"},{n:"7日間！",d:"7日連続ログイン"},{n:"丸1ヶ月",d:"30日連続"},{n:"デイリーチャレンジ",d:"デイリーチャレンジ完了"},{n:"連続記録",d:"連続記録 > 10日"},{n:"粘り強い",d:"失敗後にレベルを再プレイ"},{n:"パーフェクト×10",d:"10回パーフェクト"},{n:"マルチ",d:"3つのロードマップを開始"},{n:"卒業生",d:"1つのロードマップを完全にクリア"}],
+  fr:[{n:"Premier pas",d:"Terminer 1 niveau"},{n:"En feu",d:"5 niveaux terminés"},{n:"Diamant",d:"Atteindre 300 XP"},{n:"Champion",d:"15 niveaux terminés"},{n:"Expert",d:"Atteindre 1000 XP"},{n:"Précis",d:"5 quiz parfaits"},{n:"Studieux",d:"30 niveaux terminés"},{n:"Rapide",d:"Atteindre 500 XP"},{n:"7 jours !",d:"7 jours de série consécutifs"},{n:"Mois entier",d:"30 jours de série"},{n:"Défi du jour",d:"Compléter le Daily Challenge"},{n:"Streak record",d:"Record de série > 10 jours"},{n:"Persévérant",d:"Rejouer un niveau après échec"},{n:"Perfect x10",d:"10 quiz parfaits"},{n:"Touche-à-tout",d:"3 roadmaps commencées"},{n:"Diplômé",d:"Terminer entièrement 1 roadmap"},{n:"REST Master",d:"HTTP & API REST maîtrisés"},{n:"SQL Expert",d:"5 niveaux SQL maîtrisés"},{n:"React Builder",d:"6 niveaux Frontend maîtrisés"},{n:"DevOps Hero",d:"8 niveaux DevOps maîtrisés"},{n:"IA Pioneer",d:"5 niveaux IA maîtrisés"},{n:"Stripe Builder",d:"7 niveaux Full Stack maîtrisés"}],
+  en:[{n:"First step",d:"Complete 1 level"},{n:"On fire",d:"5 levels completed"},{n:"Diamond",d:"Reach 300 XP"},{n:"Champion",d:"15 levels completed"},{n:"Expert",d:"Reach 1000 XP"},{n:"Sharp",d:"5 perfect quizzes"},{n:"Studious",d:"30 levels completed"},{n:"Fast",d:"Reach 500 XP"},{n:"7 days!",d:"7 consecutive day streak"},{n:"Full month",d:"30-day streak"},{n:"Daily challenge",d:"Complete the Daily Challenge"},{n:"Streak record",d:"Streak record > 10 days"},{n:"Persistent",d:"Replay a level after failure"},{n:"Perfect x10",d:"10 perfect quizzes"},{n:"Generalist",d:"3 roadmaps started"},{n:"Graduate",d:"Fully complete 1 roadmap"},{n:"REST Master",d:"HTTP & REST API mastered"},{n:"SQL Expert",d:"5 SQL levels mastered"},{n:"React Builder",d:"6 Frontend levels mastered"},{n:"DevOps Hero",d:"8 DevOps levels mastered"},{n:"IA Pioneer",d:"5 AI levels mastered"},{n:"Stripe Builder",d:"7 Full Stack levels mastered"}],
+  es:[{n:"Primer paso",d:"Completar 1 nivel"},{n:"En llamas",d:"5 niveles completados"},{n:"Diamante",d:"Alcanzar 300 XP"},{n:"Campeón",d:"15 niveles completados"},{n:"Experto",d:"Alcanzar 1000 XP"},{n:"Preciso",d:"5 cuestionarios perfectos"},{n:"Estudioso",d:"30 niveles completados"},{n:"Rápido",d:"Alcanzar 500 XP"},{n:"¡7 días!",d:"7 días de racha consecutivos"},{n:"Mes completo",d:"30 días de racha"},{n:"Desafío del día",d:"Completar el Desafío Diario"},{n:"Récord de racha",d:"Récord de racha > 10 días"},{n:"Perseverante",d:"Repetir un nivel tras un fallo"},{n:"Perfecto x10",d:"10 cuestionarios perfectos"},{n:"Polivalente",d:"3 rutas iniciadas"},{n:"Graduado",d:"Completar 1 ruta completamente"},{n:"REST Master",d:"HTTP y API REST dominados"},{n:"Experto SQL",d:"5 niveles SQL dominados"},{n:"React Builder",d:"6 niveles Frontend dominados"},{n:"DevOps Hero",d:"8 niveles DevOps dominados"},{n:"Pionero IA",d:"5 niveles IA dominados"},{n:"Stripe Builder",d:"7 niveles Full Stack dominados"}],
+  pt:[{n:"Primeiro passo",d:"Concluir 1 nível"},{n:"Em chamas",d:"5 níveis concluídos"},{n:"Diamante",d:"Atingir 300 XP"},{n:"Campeão",d:"15 níveis concluídos"},{n:"Especialista",d:"Atingir 1000 XP"},{n:"Preciso",d:"5 quizzes perfeitos"},{n:"Estudioso",d:"30 níveis concluídos"},{n:"Rápido",d:"Atingir 500 XP"},{n:"7 dias!",d:"7 dias de sequência consecutivos"},{n:"Mês inteiro",d:"30 dias de sequência"},{n:"Desafio do dia",d:"Completar o Desafio Diário"},{n:"Recorde de sequência",d:"Recorde > 10 dias"},{n:"Perseverante",d:"Jogar novamente após falha"},{n:"Perfeito x10",d:"10 quizzes perfeitos"},{n:"Curioso",d:"3 trilhas iniciadas"},{n:"Formado",d:"Concluir 1 trilha completamente"},{n:"REST Master",d:"HTTP & API REST dominados"},{n:"Especialista SQL",d:"5 níveis SQL dominados"},{n:"React Builder",d:"6 níveis Frontend dominados"},{n:"DevOps Hero",d:"8 níveis DevOps dominados"},{n:"Pioneiro IA",d:"5 níveis IA dominados"},{n:"Stripe Builder",d:"7 níveis Full Stack dominados"}],
+  de:[{n:"Erster Schritt",d:"1 Level abschließen"},{n:"Auf Feuer",d:"5 Level abgeschlossen"},{n:"Diamant",d:"300 XP erreichen"},{n:"Champion",d:"15 Level abgeschlossen"},{n:"Experte",d:"1000 XP erreichen"},{n:"Präzise",d:"5 perfekte Quizze"},{n:"Fleißig",d:"30 Level abgeschlossen"},{n:"Schnell",d:"500 XP erreichen"},{n:"7 Tage!",d:"7 aufeinanderfolgende Tage"},{n:"Ganzer Monat",d:"30-Tage-Serie"},{n:"Tagesaufgabe",d:"Tägliche Aufgabe abschließen"},{n:"Serien-Rekord",d:"Serienrekord > 10 Tage"},{n:"Ausdauernd",d:"Level nach Misserfolg wiederholen"},{n:"Perfekt x10",d:"10 perfekte Quizze"},{n:"Allrounder",d:"3 Roadmaps begonnen"},{n:"Absolvent",d:"1 Roadmap vollständig abschließen"},{n:"REST Master",d:"HTTP & REST API gemeistert"},{n:"SQL Expert",d:"5 SQL-Level gemeistert"},{n:"React Builder",d:"6 Frontend-Level gemeistert"},{n:"DevOps Hero",d:"8 DevOps-Level gemeistert"},{n:"KI Pioneer",d:"5 KI-Level gemeistert"},{n:"Stripe Builder",d:"7 Full Stack-Level gemeistert"}],
+  it:[{n:"Primo passo",d:"Completare 1 livello"},{n:"In fiamme",d:"5 livelli completati"},{n:"Diamante",d:"Raggiungere 300 XP"},{n:"Campione",d:"15 livelli completati"},{n:"Esperto",d:"Raggiungere 1000 XP"},{n:"Preciso",d:"5 quiz perfetti"},{n:"Studioso",d:"30 livelli completati"},{n:"Veloce",d:"Raggiungere 500 XP"},{n:"7 giorni!",d:"7 giorni di serie consecutivi"},{n:"Mese intero",d:"30 giorni di serie"},{n:"Sfida del giorno",d:"Completare la Sfida Quotidiana"},{n:"Record serie",d:"Record di serie > 10 giorni"},{n:"Perseverante",d:"Rigiocare un livello dopo un fallimento"},{n:"Perfetto x10",d:"10 quiz perfetti"},{n:"Tuttofare",d:"3 percorsi iniziati"},{n:"Diplomato",d:"Completare 1 percorso interamente"},{n:"REST Master",d:"HTTP & API REST padroneggiati"},{n:"Esperto SQL",d:"5 livelli SQL padroneggiati"},{n:"React Builder",d:"6 livelli Frontend padroneggiati"},{n:"DevOps Hero",d:"8 livelli DevOps padroneggiati"},{n:"Pioniere IA",d:"5 livelli IA padroneggiati"},{n:"Stripe Builder",d:"7 livelli Full Stack padroneggiati"}],
+  nl:[{n:"Eerste stap",d:"1 niveau afronden"},{n:"In vuur",d:"5 niveaus afgerond"},{n:"Diamant",d:"300 XP bereiken"},{n:"Kampioen",d:"15 niveaus afgerond"},{n:"Expert",d:"1000 XP bereiken"},{n:"Nauwkeurig",d:"5 perfecte quizzen"},{n:"Studeus",d:"30 niveaus afgerond"},{n:"Snel",d:"500 XP bereiken"},{n:"7 dagen!",d:"7 opeenvolgende dagen reeks"},{n:"Hele maand",d:"30-dagenreeks"},{n:"Dagelijkse uitdaging",d:"De dagelijkse uitdaging voltooien"},{n:"Reeksrecord",d:"Reeksrecord > 10 dagen"},{n:"Volhardend",d:"Niveau herspelen na mislukking"},{n:"Perfect x10",d:"10 perfecte quizzen"},{n:"Veelzijdig",d:"3 roadmaps gestart"},{n:"Afgestudeerd",d:"1 roadmap volledig afronden"},{n:"REST Master",d:"HTTP & REST API gemeistert"},{n:"SQL Expert",d:"5 SQL-niveaus gemeistert"},{n:"React Builder",d:"6 Frontend-niveaus gemeistert"},{n:"DevOps Hero",d:"8 DevOps-niveaus gemeistert"},{n:"IA Pioneer",d:"5 IA-niveaus gemeistert"},{n:"Stripe Builder",d:"7 Full Stack-niveaus gemeistert"}],
+  ja:[{n:"第一歩",d:"1レベルをクリア"},{n:"炎上中",d:"5レベルクリア"},{n:"ダイヤモンド",d:"300XP達成"},{n:"チャンピオン",d:"15レベルクリア"},{n:"エキスパート",d:"1000XP達成"},{n:"精確",d:"5回パーフェクト"},{n:"勤勉",d:"30レベルクリア"},{n:"スピード",d:"500XP達成"},{n:"7日間！",d:"7日連続ログイン"},{n:"丸1ヶ月",d:"30日連続"},{n:"デイリーチャレンジ",d:"デイリーチャレンジ完了"},{n:"連続記録",d:"連続記録 > 10日"},{n:"粘り強い",d:"失敗後にレベルを再プレイ"},{n:"パーフェクト×10",d:"10回パーフェクト"},{n:"マルチ",d:"3つのロードマップを開始"},{n:"卒業生",d:"1つのロードマップを完全にクリア"},{n:"RESTマスター",d:"HTTP & REST APIをマスター"},{n:"SQLエキスパート",d:"5つのSQLレベル達成"},{n:"Reactビルダー",d:"6つのフロントエンドレベル達成"},{n:"DevOpsヒーロー",d:"8つのDevOpsレベル達成"},{n:"AIパイオニア",d:"5つのAIレベル達成"},{n:"Stripeビルダー",d:"7つのFull Stackレベル達成"}],
 };
 
 // ── Traductions des rangs utilisateur (zéro quota) ───────────────────────
@@ -2253,6 +2264,15 @@ const LB_INIT = [
   { n:"Toi", xp:0, av:"?", bg:"bg-stone-100", tc:"text-stone-900", isYou:true },
   { n:"Nathan", xp:320, av:"N", bg:"bg-pink-100", tc:"text-pink-900" },
   { n:"Chloé", xp:180, av:"C", bg:"bg-red-100", tc:"text-red-900" },
+];
+
+const MISSIONS = [
+  { id:"m1", icon:"🌐", title:"Initiation Backend", xp:100, total:2, desc:"Compléter 2 niveaux Backend", prog:(s)=>Math.min((s.done['backend']||[]).length,2), check:(s)=>(s.done['backend']||[]).length>=2 },
+  { id:"m2", icon:"🗄️", title:"SQL Fondamentaux",   xp:120, total:3, desc:"Compléter 3 niveaux SQL",    prog:(s)=>Math.min((s.done['sql']||[]).length,3), check:(s)=>(s.done['sql']||[]).length>=3 },
+  { id:"m3", icon:"⚛️", title:"React Débutant",     xp:110, total:3, desc:"Compléter 3 niveaux Frontend",prog:(s)=>Math.min((s.done['frontend']||[]).length,3), check:(s)=>(s.done['frontend']||[]).length>=3 },
+  { id:"m4", icon:"🔥", title:"Série de Feu",       xp:80,  total:3, desc:"Maintenir une série de 3 jours", prog:(s)=>Math.min(s.streak||0,3), check:(s)=>(s.streak||0)>=3 },
+  { id:"m5", icon:"🏆", title:"Débutant Confirmé",  xp:150, total:10, desc:"Terminer 10 niveaux",        prog:(s)=>Math.min(s.lvlDone||0,10), check:(s)=>(s.lvlDone||0)>=10 },
+  { id:"m6", icon:"💎", title:"Maître Frontend",    xp:200, total:6, desc:"Compléter 6 niveaux Frontend", prog:(s)=>Math.min((s.done['frontend']||[]).length,6), check:(s)=>(s.done['frontend']||[]).length>=6 },
 ];
 
 function userLevel(xp) {
@@ -2315,7 +2335,7 @@ function RoadLearn() {
   const tokenClientRef = React.useRef(null);
   const [screen, setScreen] = useState("home");
   const [tab, setTab] = useState("home");
-  const [state, setState] = useState({ xp:0, streak:1, lvlDone:0, done:{}, perfectQuiz:0, sessionDates:[], bestStreak:1, dailyChallenge:{date:null,done:false}, replayed:0 });
+  const [state, setState] = useState({ xp:0, streak:1, lvlDone:0, done:{}, perfectQuiz:0, sessionDates:[], bestStreak:1, dailyChallenge:{date:null,done:false}, replayed:0, missionsXpClaimed:[] });
   const [ttsSpeed, setTtsSpeed] = useState(0.9);
   const [confetti, setConfetti] = useState(false);
   const [dailyChallengeResult, setDailyChallengeResult] = useState(null); // {isCorrect, chosen, correct, explanation}
@@ -2350,6 +2370,9 @@ function RoadLearn() {
   const [notifPerm, setNotifPerm] = useState(notifSupported ? Notification.permission : 'unsupported');
   const [notifTestFeedback, setNotifTestFeedback] = useState(''); // '' | 'ok' | 'fail'
   const [ttsPlaying, setTtsPlaying] = useState(false);
+  const [speedMode, setSpeedMode] = useState(false);
+  const [speedTimeLeft, setSpeedTimeLeft] = useState(20);
+  const speedTimerRef = React.useRef(null);
   const [showTheory, setShowTheory] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [tSteps, setTSteps] = useState(null);        // steps traduits (null = utiliser steps bruts FR)
@@ -2398,6 +2421,31 @@ function RoadLearn() {
       return () => mq.removeEventListener('change', handler);
     }
   }, []);
+
+  // Speed mode countdown
+  useEffect(() => {
+    if (screen === 'lesson' && speedMode && !answered && !loading) {
+      setSpeedTimeLeft(20);
+      speedTimerRef.current = setInterval(() => {
+        setSpeedTimeLeft(t => {
+          if (t <= 1) {
+            clearInterval(speedTimerRef.current);
+            // Auto-answer wrong if time runs out
+            const step = steps[stepIdx];
+            if (step && step.type !== 'theory') {
+              setAnswered(true);
+              setSelectedAns(-1);
+              setLives(l => Math.max(0, l - 1));
+              playBeep('wrong');
+            }
+            return 0;
+          }
+          return t - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(speedTimerRef.current);
+  }, [screen, speedMode, stepIdx, answered, loading]);
 
 function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang', code); } catch(_) {} }
   function setTheme(mode) {
@@ -2798,6 +2846,9 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     setTab(s); setScreen(s);
     if (s !== 'home') setDailyChallengeResult(null); // reset daily challenge result when navigating away
   }
+  function handleClaimMission(mId, xpReward) {
+    setState(s => ({ ...s, xp: s.xp + xpReward, missionsXpClaimed: [...(s.missionsXpClaimed||[]), mId] }));
+  }
   function handleStart() { const name = usernameInput.trim() || "Joueur"; setUsername(name); setHasStarted(true); }
   function saveUsername() { const t = usernameInput.trim(); if (!t) return; setUsername(t); setEditingUsername(false); }
 
@@ -3105,6 +3156,10 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             style={{display:'flex', alignItems:'center', gap:4, background: dark?'rgba(245,158,11,0.12)':'#fef9e7', color: dark?'#fbbf24':'#b45309', borderRadius:99, padding:'5px 10px', fontSize:11, fontWeight:700, cursor:'default'}}>
             <Flame size={11}/><span>{state.streak}🔥{state.streak>=7?' 🌟':''}</span>
           </div>
+          <button onClick={()=>setSpeedMode(m=>!m)} title={speedMode?'Désactiver mode vitesse':'Activer mode vitesse (+20s par question)'}
+            style={{width:32,height:32,borderRadius:10,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,background:speedMode?'linear-gradient(135deg,#f59e0b,#ef4444)':(dark?'#1c1c1f':'#f3f4f6'),color:speedMode?'white':(dark?'#fafafa':'#374151'),flexShrink:0}}>
+            ⚡
+          </button>
           <button onClick={()=>setTheme(dark?'light':'dark')} title={dark?'Mode clair':'Mode sombre'}
             style={{width:32,height:32,borderRadius:10,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,background:dark?'#1c1c1f':'#f3f4f6',color:dark?'#fafafa':'#374151',flexShrink:0}}>
             {dark?'☀️':'🌙'}
@@ -3276,6 +3331,39 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             </div>
           );
         })()}
+
+        {/* ── Missions ──────────────────────────────────────────────────── */}
+        <div style={{padding:'0 16px', marginBottom:14}}>
+          <div style={{fontSize:11, fontWeight:700, color: dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', marginBottom:8}}>🎯 MISSIONS</div>
+          <div style={{display:'flex', flexDirection:'column', gap:8}}>
+            {MISSIONS.map(m => {
+              const done = m.check(state);
+              const claimed = (state.missionsXpClaimed||[]).includes(m.id);
+              const p = m.prog(state), pct = Math.round((p/m.total)*100);
+              if (claimed) return null;
+              return (
+                <div key={m.id} style={{borderRadius:14, padding:'12px 14px', border:`1.5px solid ${done?(dark?'rgba(99,102,241,0.4)':'#c7d2fe'):(dark?'#2a2a2a':'#f0f0f5')}`, background:done?(dark?'rgba(99,102,241,0.08)':'#f5f3ff'):(dark?'#161616':'#fafafa')}}>
+                  <div style={{display:'flex', alignItems:'center', gap:10}}>
+                    <span style={{fontSize:22}}>{m.icon}</span>
+                    <div style={{flex:1, minWidth:0}}>
+                      <div style={{fontSize:13, fontWeight:700, color:dark?'#fafafa':'#0f172a', marginBottom:2}}>{m.title}</div>
+                      <div style={{fontSize:11, color:dark?'#71717a':'#64748b'}}>{m.desc}</div>
+                      <div style={{height:5, background:dark?'#27272a':'#e5e7eb', borderRadius:99, overflow:'hidden', marginTop:6}}>
+                        <div style={{height:'100%', borderRadius:99, background:'linear-gradient(90deg,#6366f1,#8b5cf6)', width:`${pct}%`, transition:'width 0.5s'}}/>
+                      </div>
+                      <div style={{fontSize:10, color:dark?'#52525b':'#94a3b8', marginTop:3}}>{p}/{m.total}</div>
+                    </div>
+                    {done ? (
+                      <button onClick={()=>handleClaimMission(m.id, m.xp)} style={{flexShrink:0, padding:'7px 12px', borderRadius:10, border:'none', cursor:'pointer', fontSize:12, fontWeight:700, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'white', boxShadow:'0 4px 12px rgba(99,102,241,0.3)'}}>+{m.xp} XP</button>
+                    ) : (
+                      <span style={{flexShrink:0, fontSize:11, fontWeight:600, color:dark?'#52525b':'#94a3b8', padding:'4px 8px', borderRadius:8, background:dark?'#27272a':'#f3f4f6'}}>{pct}%</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Roadmaps */}
         <div style={{fontSize:11, fontWeight:700, color: dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>
@@ -3823,6 +3911,17 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
               ))}
             </div>
           </div>
+          {speedMode && !loading && step?.type !== 'theory' && (
+            <div style={{marginBottom:6}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:3}}>
+                <span style={{fontSize:10, fontWeight:700, color: speedTimeLeft<=5?'#ef4444':'#f59e0b'}}>⚡ {speedTimeLeft}s</span>
+                <span style={{fontSize:10, color:dark?'#6b7280':'#9ca3af'}}>Mode Vitesse</span>
+              </div>
+              <div style={{height:4, background:dark?'#27272a':'#e5e7eb', borderRadius:99, overflow:'hidden'}}>
+                <div style={{height:'100%', borderRadius:99, background:speedTimeLeft<=5?'#ef4444':'#f59e0b', width:`${(speedTimeLeft/20)*100}%`, transition:'width 1s linear'}}/>
+              </div>
+            </div>
+          )}
           <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af', fontWeight:500, display:'flex', alignItems:'center', gap:6}}>
             {(()=>{const ll=L_LESSON[lang]||L_LESSON.fr;return loading?ll.loading:step?.type==="theory"?`📖 ${ll.lesson} ${stepIdx+1}/${total}`:`❓ ${ll.question} ${stepIdx+1}/${total}`;})()}
             {translating && <span style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:99,background:dark?'#1e3a5f':'#eff6ff',color:dark?'#60a5fa':'#1d4ed8',animation:'pulse 1.2s ease-in-out infinite'}}>🌐 …</span>}
