@@ -299,17 +299,6 @@ const L_GOOGLE = {
   ja:{signIn:"Googleでログイン",signOut:"ログアウト",connected:"接続済み",setup:"無料のGeminiキーを設定"},
 };
 
-// ── Textes des notifications push (multilingue) ───────────────────────────────
-const L_NOTIF = {
-  fr:{ dailyTitle:'📚 RoadLearn', dailyBody:'C\'est l\'heure de ta leçon du jour ! 🚀', streakTitle:'🔥 Ta série est en danger !', streakBody:'Tu n\'as pas encore joué aujourd\'hui. Reviens vite pour garder ta série !', testTitle:'🔔 Notifications actives', testBody:'Les rappels RoadLearn fonctionnent parfaitement ✅' },
-  en:{ dailyTitle:'📚 RoadLearn', dailyBody:'Time for your daily lesson! 🚀', streakTitle:'🔥 Your streak is at risk!', streakBody:'You haven\'t played today. Come back now to keep your streak!', testTitle:'🔔 Notifications active', testBody:'RoadLearn reminders are working correctly ✅' },
-  es:{ dailyTitle:'📚 RoadLearn', dailyBody:'¡Es hora de tu lección diaria! 🚀', streakTitle:'🔥 ¡Tu racha está en peligro!', streakBody:'Aún no has jugado hoy. ¡Vuelve ahora para mantener tu racha!', testTitle:'🔔 Notificaciones activas', testBody:'Los recordatorios de RoadLearn funcionan correctamente ✅' },
-  pt:{ dailyTitle:'📚 RoadLearn', dailyBody:'Hora da sua lição diária! 🚀', streakTitle:'🔥 Sua sequência está em risco!', streakBody:'Você ainda não jogou hoje. Volte agora para manter sua sequência!', testTitle:'🔔 Notificações ativas', testBody:'Os lembretes do RoadLearn estão funcionando ✅' },
-  de:{ dailyTitle:'📚 RoadLearn', dailyBody:'Zeit für deine tägliche Lektion! 🚀', streakTitle:'🔥 Deine Serie ist in Gefahr!', streakBody:'Du hast heute noch nicht gespielt. Komm zurück und bewahre deine Serie!', testTitle:'🔔 Benachrichtigungen aktiv', testBody:'Die RoadLearn-Erinnerungen funktionieren korrekt ✅' },
-  it:{ dailyTitle:'📚 RoadLearn', dailyBody:'È ora della tua lezione quotidiana! 🚀', streakTitle:'🔥 La tua serie è in pericolo!', streakBody:'Non hai ancora giocato oggi. Torna ora per mantenere la tua serie!', testTitle:'🔔 Notifiche attive', testBody:'I promemoria di RoadLearn funzionano correttamente ✅' },
-  nl:{ dailyTitle:'📚 RoadLearn', dailyBody:'Tijd voor je dagelijkse les! 🚀', streakTitle:'🔥 Je reeks is in gevaar!', streakBody:'Je hebt vandaag nog niet gespeeld. Kom terug om je reeks te bewaren!', testTitle:'🔔 Meldingen actief', testBody:'De RoadLearn-herinneringen werken correct ✅' },
-  ja:{ dailyTitle:'📚 RoadLearn', dailyBody:'今日のレッスンの時間です！🚀', streakTitle:'🔥 ストリークが危ない！', streakBody:'今日まだプレイしていません。今すぐ戻ってストリークを守ろう！', testTitle:'🔔 通知が有効', testBody:'RoadLearnのリマインダーが正常に動作しています ✅' },
-};
 
 // ── Traductions ───────────────────────────────────────────────────────────────
 const TRANSLATIONS = {
@@ -2678,7 +2667,7 @@ function RoadLearn() {
   const tokenClientRef = React.useRef(null);
   const [screen, setScreen] = useState("home");
   const [tab, setTab] = useState("home");
-  const [state, setState] = useState({ xp:0, streak:1, lvlDone:0, done:{}, perfectQuiz:0, sessionDates:[], bestStreak:1, dailyChallenge:{date:null,done:false}, replayed:0, missionsXpClaimed:[], exDoneIds:[] });
+  const [state, setState] = useState({ xp:0, streak:1, lvlDone:0, done:{}, perfectQuiz:0, sessionDates:[], bestStreak:1, dailyChallenge:{date:null,done:false}, replayed:0, missionsXpClaimed:[], exDoneIds:[], dailyXp:0 });
   const [ttsSpeed, setTtsSpeed] = useState(0.9);
   const [confetti, setConfetti] = useState(false);
   const [dailyChallengeResult, setDailyChallengeResult] = useState(null); // {isCorrect, chosen, correct, explanation}
@@ -2708,10 +2697,10 @@ function RoadLearn() {
     try { return localStorage.getItem('rl_theme') || 'auto'; } catch(_) { return 'auto'; }
   });
   const [lang, setLang] = useState('fr');
-  const [notifSettings, setNotifSettings] = useState({ global:false, lesson:true, streak:true, lb:false, time:'19:00' });
-  const notifSupported = typeof Notification !== 'undefined';
-  const [notifPerm, setNotifPerm] = useState(notifSupported ? Notification.permission : 'unsupported');
-  const [notifTestFeedback, setNotifTestFeedback] = useState(''); // '' | 'ok' | 'fail'
+  const [toast, setToast] = useState(null);           // {msg, icon, color}
+  const [welcomeBack, setWelcomeBack] = useState(null);// {days}
+  const [dailyGoal, setDailyGoal] = useState(50);      // XP objectif quotidien
+  const toastTimerRef = React.useRef(null);
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const [speedMode, setSpeedMode] = useState(false);
   const [speedTimeLeft, setSpeedTimeLeft] = useState(20);
@@ -2732,7 +2721,7 @@ function RoadLearn() {
   const translCache = React.useRef({});              // cache: translCache[lang][cacheKey] = steps
   const [profilePhoto, setProfilePhoto] = useState(null); // base64 data URL ou null
   const photoInputRef = React.useRef(null);
-  const notifTimerRef = React.useRef(null);
+  const motivDismissed = React.useRef(false);
 
   // ── Thème + langue + notifications ────────────────────────────────────────
   useEffect(() => {
@@ -2753,8 +2742,8 @@ function RoadLearn() {
       }
       const savedLang = localStorage.getItem('rl_lang');
       if (savedLang && TRANSLATIONS[savedLang]) setLang(savedLang);
-      const savedNotif = localStorage.getItem('rl_notif');
-      if (savedNotif) setNotifSettings(JSON.parse(savedNotif));
+      const savedGoal = localStorage.getItem('rl_daily_goal');
+      if (savedGoal) setDailyGoal(parseInt(savedGoal, 10));
       const savedSpeed = localStorage.getItem('rl_tts_speed');
       if (savedSpeed) setTtsSpeed(parseFloat(savedSpeed));
       const savedPhoto = localStorage.getItem('rl_photo');
@@ -2887,104 +2876,25 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     const isCorrect = idx === dc.correct;
     playBeep(isCorrect ? 'correct' : 'wrong');
     setDailyChallengeResult({ isCorrect, chosen: idx, correct: dc.correct, explanation: dc.explanation });
+    const dcXp = isCorrect ? 20 : 5;
     setState(s => ({
       ...s,
-      xp: s.xp + (isCorrect ? 20 : 5),
+      xp: s.xp + dcXp,
+      dailyXp: (s.dailyXp || 0) + dcXp,
       dailyChallenge: { date: today, done: true, correct: isCorrect },
     }));
+    setTimeout(() => {
+      showToast(isCorrect ? (lang==='fr'?'+20 XP — Bonne réponse !':'+20 XP — Correct!') : (lang==='fr'?'+5 XP — Reviens demain':'+5 XP — Try again tomorrow'), isCorrect ? '✅' : '💪', isCorrect ? '#059669' : '#6366f1');
+    }, 400);
   }
-  function saveNotif(updated) { setNotifSettings(updated); try { localStorage.setItem('rl_notif', JSON.stringify(updated)); } catch(_) {} }
-  async function requestNotifPerm() {
-    if (!notifSupported) return;
-    try {
-      const perm = await Notification.requestPermission();
-      setNotifPerm(perm);
-      if (perm === 'granted') saveNotif({ ...notifSettings, global: true });
-    } catch(e) {
-      // Certains navigateurs utilisent l'ancienne API callback
-      Notification.requestPermission(perm => {
-        setNotifPerm(perm);
-        if (perm === 'granted') saveNotif({ ...notifSettings, global: true });
-      });
-    }
+  // ── Toast motivationnel in-app ────────────────────────────────────────────
+  function showToast(msg, icon = '🎉', color = '#6366f1', duration = 3000) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ msg, icon, color });
+    toastTimerRef.current = setTimeout(() => setToast(null), duration);
   }
+  function saveDailyGoal(v) { setDailyGoal(v); try { localStorage.setItem('rl_daily_goal', String(v)); } catch(_) {} }
 
-  // ── Envoi effectif d'une notification ────────────────────────────────────────
-  // new Notification() en premier (synchrone, conserve le geste utilisateur).
-  // Si le navigateur le bloque, on tente ServiceWorker.showNotification() avec timeout.
-  async function sendNotif(title, body, tag) {
-    if (!notifSupported || Notification.permission !== 'granted') return false;
-    // Tentative 1 : new Notification() — le plus direct
-    try {
-      new Notification(title, { body, tag: tag || 'rl', icon: './icon.svg', silent: false });
-      return true;
-    } catch(e1) {}
-    // Tentative 2 : ServiceWorker.showNotification() avec timeout 4 s
-    if ('serviceWorker' in navigator) {
-      try {
-        const reg = await Promise.race([
-          navigator.serviceWorker.ready,
-          new Promise((_, rej) => setTimeout(() => rej('SW timeout'), 4000)),
-        ]);
-        await reg.showNotification(title, {
-          body, tag: tag || 'rl',
-          icon: './icon.svg',
-          requireInteraction: false,
-        });
-        return true;
-      } catch(e2) {}
-    }
-    return false;
-  }
-
-  // Sync notifPerm avec la vraie valeur du navigateur (ex: si l'utilisateur change
-  // manuellement les permissions pendant que la page est ouverte)
-  useEffect(() => {
-    if (!notifSupported) return;
-    const sync = () => setNotifPerm(Notification.permission);
-    document.addEventListener('visibilitychange', sync);
-    return () => document.removeEventListener('visibilitychange', sync);
-  }, []);
-
-  // ── Planification du rappel quotidien ────────────────────────────────────────
-  useEffect(() => {
-    if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
-    if (!notifSettings.global || notifPerm !== 'granted') return;
-
-    function scheduleNext() {
-      const now = new Date();
-      const [h, m] = (notifSettings.time || '19:00').split(':').map(Number);
-      const next = new Date(now);
-      next.setHours(h, m, 0, 0);
-      if (next <= now) next.setDate(next.getDate() + 1); // demain si l'heure est passée
-      const delay = next - now;
-
-      notifTimerRef.current = setTimeout(async () => {
-        // Lire les données fraîches depuis localStorage pour éviter les closures périmées
-        const today = new Date().toISOString().slice(0, 10);
-        const lastFired = localStorage.getItem('rl_notif_fired');
-        if (lastFired === today) { scheduleNext(); return; } // déjà notifié aujourd'hui
-
-        const savedGs = JSON.parse(localStorage.getItem('roadlearn_v2') || '{}');
-        const playedToday = (savedGs.gameState?.sessionDates || []).includes(today);
-        const savedNotif = JSON.parse(localStorage.getItem('rl_notif') || '{}');
-        const curLang = localStorage.getItem('rl_lang') || 'fr';
-        const ln = L_NOTIF[curLang] || L_NOTIF.fr;
-
-        if (savedNotif.streak && !playedToday) {
-          await sendNotif(ln.streakTitle, ln.streakBody, 'rl-streak');
-        } else if (savedNotif.lesson) {
-          await sendNotif(ln.dailyTitle, ln.dailyBody, 'rl-daily');
-        }
-        try { localStorage.setItem('rl_notif_fired', today); } catch(_) {}
-        scheduleNext(); // planifier pour le lendemain
-      }, delay);
-    }
-
-    scheduleNext();
-    return () => { if (notifTimerRef.current) clearTimeout(notifTimerRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notifSettings.global, notifSettings.time, notifSettings.lesson, notifSettings.streak, notifPerm]);
   const TTS_LANG = { fr:'fr-FR', en:'en-US', es:'es-ES', pt:'pt-BR', de:'de-DE', it:'it-IT', nl:'nl-NL', ja:'ja-JP' };
   function stopAudio() {
     if (audioRef.current) { try { audioRef.current.pause(); } catch(_) {} audioRef.current = null; }
@@ -3116,6 +3026,50 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.fr;
 
+  // -- Toast motivationnel
+  const ToastOverlay = () => {
+    if (!toast) return null;
+    return (
+      <div className="slide-up" style={{
+        position:'fixed', bottom:74, left:'50%', transform:'translateX(-50%)',
+        background: toast.color, color:'white',
+        padding:'10px 20px', borderRadius:99, fontSize:13, fontWeight:700,
+        boxShadow:'0 4px 20px rgba(0,0,0,0.25)',
+        zIndex:9997, display:'flex', gap:7, alignItems:'center',
+        whiteSpace:'nowrap', pointerEvents:'none', letterSpacing:-0.2
+      }}>
+        <span style={{fontSize:16}}>{toast.icon}</span>
+        <span>{toast.msg}</span>
+      </div>
+    );
+  };
+
+  // -- Banniere de retour
+  const WelcomeBackBanner = () => {
+    if (!welcomeBack) return null;
+    const daysStr = welcomeBack.days === 1 ? 'hier' : welcomeBack.days + ' jours';
+    const title = lang==='en'?'Welcome back!':lang==='es'?'Bienvenido de vuelta!':'Bienvenue de retour !';
+    const sub = lang==='en'?('Away for '+welcomeBack.days+' day'+(welcomeBack.days>1?'s':'')+'. Get back on track!')
+      :(lang==='es'?('Ausente '+welcomeBack.days+' dia'+(welcomeBack.days>1?'s':'')+'. Retoma el ritmo!')
+      :('Tu etais absent '+daysStr+'. Reprends le rythme !'));
+    return (
+      <div className="slide-up" style={{
+        margin:'0 16px 12px', padding:'14px 16px', borderRadius:18,
+        background: dark ? 'rgba(99,102,241,0.15)' : 'linear-gradient(135deg,#eef2ff,#f5f3ff)',
+        border: '1px solid ' + (dark?'rgba(99,102,241,0.3)':'#c7d2fe'),
+        display:'flex', alignItems:'center', gap:12
+      }}>
+        <div style={{fontSize:28, flexShrink:0}}>{'🌟'}</div>
+        <div style={{flex:1, minWidth:0}}>
+          <div style={{fontSize:13, fontWeight:700, color: dark?'#a5b4fc':'#4f46e5', marginBottom:2}}>{title}</div>
+          <div style={{fontSize:11, color: dark?'#71717a':'#6b7280'}}>{sub}</div>
+        </div>
+        <button onClick={() => { setWelcomeBack(null); motivDismissed.current = true; }}
+          style={{background:'none', border:'none', color: dark?'#52525b':'#9ca3af', fontSize:18, cursor:'pointer', flexShrink:0, padding:'0 0 0 4px'}}>{'×'}</button>
+      </div>
+    );
+  };
+
   // ── Confetti overlay ──────────────────────────────────────────────────────
   const ConfettiOverlay = () => {
     const colors = ['#3b82f6','#6366f1','#10b981','#f59e0b','#ec4899','#8b5cf6','#ef4444','#14b8a6'];
@@ -3151,12 +3105,20 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
           if (data.lastLoginDate && data.lastLoginDate !== today) {
             const yesterday = new Date(Date.now() - 86400000).toDateString();
             gs.streak = data.lastLoginDate === yesterday ? (gs.streak || 1) + 1 : 1;
+            gs.dailyXp = 0; // reset XP quotidien chaque nouveau jour
+            // Détection retour après absence > 1 jour
+            if (data.lastLoginDate !== yesterday && !motivDismissed.current) {
+              const msAway = Date.now() - new Date(data.lastLoginDate).getTime();
+              const daysAway = Math.round(msAway / 86400000);
+              setTimeout(() => setWelcomeBack({ days: daysAway }), 500);
+            }
           }
           // Migrations : champs ajoutés post-v2
           if (!gs.sessionDates) gs.sessionDates = [];
           if (!gs.bestStreak) gs.bestStreak = gs.streak || 1;
           if (!gs.dailyChallenge) gs.dailyChallenge = { date: null, done: false };
           if (gs.replayed === undefined) gs.replayed = 0;
+          if (gs.dailyXp === undefined) gs.dailyXp = 0;
           // Mise à jour du bestStreak à la connexion
           gs.bestStreak = Math.max(gs.bestStreak || 1, gs.streak || 1);
           setState(gs);
@@ -3367,9 +3329,11 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
       }
       const newDates = [...new Set([...(s.sessionDates||[]), today])].slice(-90);
       const newBestStreak = Math.max(s.bestStreak || 1, s.streak || 1);
+      const newDailyXp = (s.dailyXp || 0) + xpGain;
       return {
         ...s,
         xp: s.xp + xpGain,
+        dailyXp: newDailyXp,
         lvlDone: newLvlDone,
         done: newDone,
         perfectQuiz: perfect ? s.perfectQuiz + 1 : s.perfectQuiz,
@@ -3379,6 +3343,21 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
       };
     });
     if (perfect) setTimeout(() => setConfetti(true), 200);
+    // Toasts motivationnels
+    setTimeout(() => {
+      if (perfect) {
+        showToast(lang==='fr'?'Parfait ! Aucune erreur':'Perfect! No mistakes', '🌟', '#059669');
+      } else if (!failed) {
+        const savedGs = JSON.parse(localStorage.getItem('roadlearn_v2')||'{}');
+        const freshDailyXp = ((savedGs.gameState||{}).dailyXp || 0);
+        const goal = parseInt(localStorage.getItem('rl_daily_goal')||'50', 10);
+        if (freshDailyXp >= goal && (freshDailyXp - xpGain) < goal) {
+          showToast(lang==='fr'?'Objectif du jour atteint !':'Daily goal reached!', '🎯', '#f59e0b', 4000);
+        } else {
+          showToast('+' + xpGain + ' XP !', '⚡', '#6366f1');
+        }
+      }
+    }, 300);
     setResultData({
       failed, perfect, masteryWarn, xpGain,
       score: correct, total: quizCount, acc, livesLeft: lives,
@@ -3589,6 +3568,43 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             </div>
           </div>
         )}
+
+        {/* Daily goal progress */}
+        {(() => {
+          const dailyXp = state.dailyXp || 0;
+          const pct = Math.min(100, Math.round((dailyXp / dailyGoal) * 100));
+          const done = dailyXp >= dailyGoal;
+          return (
+            <div style={{margin:'0 16px 12px', padding:'12px 14px', borderRadius:16,
+              background: done ? (dark?'rgba(5,150,105,0.12)':'#f0fdf4') : (dark?'#18181b':'#f8f8fd'),
+              border: '1px solid ' + (done ? (dark?'rgba(5,150,105,0.25)':'#a7f3d0') : (dark?'#27272a':'#eef0f5'))}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
+                <div style={{display:'flex', alignItems:'center', gap:7}}>
+                  <span style={{fontSize:16}}>{done ? '✅' : '🎯'}</span>
+                  <div style={{fontSize:12, fontWeight:700, color: dark?'#e4e4e7':'#1e293b'}}>
+                    {lang==='fr'?'Objectif du jour':lang==='en'?'Daily goal':lang==='es'?'Objetivo diario':lang==='de'?'Tagesziel':lang==='pt'?'Meta diária':'Objectif du jour'}
+                  </div>
+                </div>
+                <div style={{fontSize:11, fontWeight:700, color: done?(dark?'#6ee7b7':'#059669'):(dark?'#71717a':'#6b7280')}}>
+                  {dailyXp} / {dailyGoal} XP
+                </div>
+              </div>
+              <div style={{height:6, background: dark?'#27272a':'#e5e7eb', borderRadius:99, overflow:'hidden'}}>
+                <div className="progress-bar" style={{height:'100%', borderRadius:99,
+                  width: pct + '%',
+                  background: done ? 'linear-gradient(90deg,#059669,#10b981)' : 'linear-gradient(90deg,#6366f1,#8b5cf6)'}}/>
+              </div>
+              {done && (
+                <div style={{fontSize:11, color: dark?'#6ee7b7':'#059669', marginTop:5, fontWeight:600}}>
+                  {lang==='fr'?'🎉 Objectif atteint ! Reviens demain pour continuer.':lang==='en'?'🎉 Goal reached! Come back tomorrow to continue.':'🎉 Objectif atteint !'}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Welcome back banner */}
+        <WelcomeBackBanner />
 
         {/* Stats */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, padding:'0 16px', marginBottom:16}}>
@@ -4078,76 +4094,53 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         </div>
 
         {/* ── Notifications ───────────────────────────────────────────────── */}
-        <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.settings.notifications}</div>
-        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-          {/* Cas 1 : non supporté (iOS Safari sans PWA installée) */}
-          {notifPerm==='unsupported'&&(
-            <div style={{padding:'13px 16px',display:'flex',gap:10,alignItems:'flex-start',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-              <span style={{fontSize:18}}>📵</span>
-              <div style={{fontSize:13,color:dark?'#71717a':'#64748b',lineHeight:1.5}}>
-                {lang==='fr'?'Notifications non supportées sur ce navigateur. Installe l\'app sur ton écran d\'accueil pour les activer.':lang==='de'?'Benachrichtigungen werden von diesem Browser nicht unterstützt. Installiere die App auf deinem Startbildschirm.':lang==='es'?'Notificaciones no compatibles con este navegador. Instala la app en tu pantalla de inicio.':lang==='pt'?'Notificações não suportadas neste navegador. Instale o app na tela inicial.':lang==='it'?'Notifiche non supportate da questo browser. Installa l\'app sulla schermata principale.':lang==='nl'?'Meldingen worden niet ondersteund door deze browser. Installeer de app op je startscherm.':lang==='ja'?'このブラウザでは通知はサポートされていません。ホーム画面にアプリを追加してください。':'Notifications not supported by this browser. Install the app on your home screen to enable them.'}
-              </div>
+
+        {/* -- Objectifs & Motivation */}
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>
+          {lang==='fr'?'Objectifs & motivation':lang==='en'?'Goals & motivation':lang==='es'?'Objetivos':'Objectifs'}
+        </div>
+        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:'1px solid '+(dark?'#27272a':'#eef0f5')}}>
+          {/* Objectif XP quotidien */}
+          <div style={{padding:'13px 16px', borderBottom:'1px solid '+(dark?'#27272a':'#eef0f5')}}>
+            <div style={{fontSize:14, fontWeight:600, color:dark?'#fafafa':'#0f172a', marginBottom:10}}>
+              {lang==='fr'?'Objectif XP quotidien':lang==='en'?'Daily XP goal':lang==='es'?'Meta diaria de XP':'Objectif XP quotidien'}
             </div>
-          )}
-          {/* Cas 2 : permission refusée → instructions manuelles */}
-          {notifPerm==='denied'&&(
-            <div style={{padding:'13px 16px',display:'flex',gap:10,alignItems:'flex-start',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-              <span style={{fontSize:18}}>🚫</span>
-              <div style={{fontSize:13,color:dark?'#71717a':'#64748b',lineHeight:1.5}}>
-                {lang==='fr'?'Notifications bloquées par le navigateur. Va dans les paramètres du site (🔒 dans la barre d\'adresse) et autorise les notifications.':lang==='de'?'Benachrichtigungen vom Browser blockiert. Gehe zu den Website-Einstellungen (🔒 in der Adressleiste) und erlaube Benachrichtigungen.':lang==='es'?'Notificaciones bloqueadas por el navegador. Ve a los ajustes del sitio (🔒 en la barra de dirección) y permite las notificaciones.':lang==='pt'?'Notificações bloqueadas pelo navegador. Vá para as configurações do site (🔒 na barra de endereço) e permita notificações.':lang==='it'?'Notifiche bloccate dal browser. Vai alle impostazioni del sito (🔒 nella barra degli indirizzi) e consenti le notifiche.':lang==='nl'?'Meldingen geblokkeerd door de browser. Ga naar de site-instellingen (🔒 in de adresbalk) en sta meldingen toe.':lang==='ja'?'ブラウザによって通知がブロックされています。アドレスバーの🔒から通知を許可してください。':'Notifications blocked by the browser. Go to site settings (🔒 in the address bar) and allow notifications.'}
-              </div>
+            <div style={{display:'flex', gap:8}}>
+              {[20,50,100,200].map(v => (
+                <button key={v} onClick={() => saveDailyGoal(v)} style={{
+                  flex:1, padding:'8px 4px', borderRadius:12, fontSize:13, fontWeight:700,
+                  border:'1.5px solid '+(dailyGoal===v?'#6366f1':(dark?'#27272a':'#e5e7eb')),
+                  background: dailyGoal===v?'linear-gradient(135deg,#6366f1,#8b5cf6)':(dark?'#09090b':'white'),
+                  color: dailyGoal===v?'white':(dark?'#a1a1aa':'#6b7280'),
+                  boxShadow: dailyGoal===v?'0 2px 8px rgba(99,102,241,0.3)':'none',
+                  cursor:'pointer', transition:'all 0.15s'
+                }}>{v}</button>
+              ))}
             </div>
-          )}
-          {/* Cas 3 : pas encore demandé → bouton d'autorisation */}
-          {notifPerm==='default'&&(
-            <div style={{padding:'12px 16px',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-              <button onClick={requestNotifPerm} style={{width:'100%',padding:11,borderRadius:12,fontSize:14,fontWeight:700,cursor:'pointer',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',border:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:8,boxShadow:'0 4px 16px rgba(99,102,241,0.3)'}}>
-                🔔 {t.settings.notifPerm}
-              </button>
-            </div>
-          )}
-          {[
-            {label:t.settings.notifGlobal,sublabel:notifPerm==='denied'?null:notifPerm!=='granted'?(t.settings?.notifRequired||'⚠️ Permission requise'):null,val:notifSettings.global&&notifPerm==='granted',dis:notifPerm!=='granted',onChange:v=>saveNotif({...notifSettings,global:v})},
-            {label:t.settings.notifLesson,val:notifSettings.global&&notifSettings.lesson,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,lesson:v})},
-            {label:t.settings.notifStreak,val:notifSettings.global&&notifSettings.streak,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,streak:v})},
-            {label:t.settings.notifLb,val:notifSettings.global&&notifSettings.lb,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,lb:v})},
-          ].map((r,i,arr)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderBottom:i<arr.length-1?`1px solid ${dark?'#27272a':'#eef0f5'}`:'none'}}>
-              <div style={{flex:1,paddingRight:12}}>
-                <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{r.label}</div>
-                {r.sublabel&&<div style={{fontSize:12,color:dark?'#71717a':'#64748b',marginTop:2}}>{r.sublabel}</div>}
-              </div>
-              <div onClick={()=>!r.dis&&r.onChange(!r.val)} style={{width:46,height:26,borderRadius:13,position:'relative',cursor:r.dis?'not-allowed':'pointer',flexShrink:0,background:r.val?'#6366f1':(dark?'#27272a':'#d1d5db'),transition:'background 0.2s',opacity:r.dis?0.35:1,boxShadow:r.val?'0 0 8px rgba(99,102,241,0.4)':'none'}}>
-                <div style={{position:'absolute',top:3,left:r.val?23:3,width:20,height:20,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 4px rgba(0,0,0,.25)',transition:'left 0.2s'}}/>
-              </div>
-            </div>
-          ))}
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderTop:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-            <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{t.settings.notifTime}</div>
-            <input type="time" value={notifSettings.time} disabled={!notifSettings.global}
-              onChange={e=>saveNotif({...notifSettings,time:e.target.value})}
-              style={{background:dark?'#09090b':'white',color:dark?'#fafafa':'#0f172a',border:`1.5px solid ${dark?'#27272a':'#e8eaf0'}`,borderRadius:8,padding:'5px 10px',fontSize:13,opacity:notifSettings.global?1:0.35}}/>
           </div>
-          {/* Bouton Tester — vérifie que les notifs fonctionnent */}
-          {notifPerm==='granted'&&notifSettings.global&&(
-            <div style={{padding:'12px 16px',borderTop:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-              <button onClick={async ()=>{
-                const ln = L_NOTIF[lang]||L_NOTIF.fr;
-                const ok = await sendNotif(ln.testTitle, ln.testBody, 'rl-test');
-                setNotifTestFeedback(ok ? 'ok' : 'fail');
-                setTimeout(() => setNotifTestFeedback(''), 4000);
-              }} style={{width:'100%',padding:'9px 14px',borderRadius:10,fontSize:13,fontWeight:600,cursor:'pointer',
-                background:notifTestFeedback==='ok'?'#059669':notifTestFeedback==='fail'?'#dc2626':(dark?'#1c1c1f':'#f3f4f6'),
-                color:notifTestFeedback?'white':(dark?'#a1a1aa':'#374151'),
-                border:`1.5px solid ${notifTestFeedback==='ok'?'#059669':notifTestFeedback==='fail'?'#dc2626':(dark?'#2d2d30':'#e5e7eb')}`,
-                display:'flex',alignItems:'center',justifyContent:'center',gap:6,
-                transition:'all 0.2s'}}>
-                {notifTestFeedback==='ok'?'✅ '+(lang==='fr'?'Notification envoyée !':lang==='de'?'Benachrichtigung gesendet!':lang==='es'?'¡Notificación enviada!':lang==='pt'?'Notificação enviada!':lang==='it'?'Notifica inviata!':lang==='nl'?'Melding verzonden!':lang==='ja'?'通知を送信しました！':'Notification sent!')
-                :notifTestFeedback==='fail'?'❌ '+(lang==='fr'?'Échec — vérifier les permissions':'Failed — check permissions')
-                :'🔔 '+(lang==='fr'?'Envoyer une notification test':lang==='de'?'Test-Benachrichtigung senden':lang==='es'?'Enviar notificación de prueba':lang==='pt'?'Enviar notificação de teste':lang==='it'?'Invia notifica di prova':lang==='nl'?'Testmelding verzenden':lang==='ja'?'テスト通知を送信':'Send test notification')}
-              </button>
+          {/* Progression du jour */}
+          <div style={{padding:'13px 16px'}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8}}>
+              <div style={{fontSize:14, fontWeight:600, color:dark?'#fafafa':'#0f172a'}}>
+                {lang==='fr'?'XP aujourd'hui':lang==='en'?'XP today':lang==='es'?'XP hoy':'XP aujourd'hui'}
+              </div>
+              <div style={{fontSize:12, fontWeight:700, color:
+                (state.dailyXp||0)>=dailyGoal?(dark?'#6ee7b7':'#059669'):(dark?'#a5b4fc':'#6366f1')
+              }}>
+                {state.dailyXp||0} / {dailyGoal} XP
+                {(state.dailyXp||0)>=dailyGoal&&' ✅'}
+              </div>
             </div>
-          )}
+            <div style={{height:8, background:dark?'#27272a':'#e5e7eb', borderRadius:99, overflow:'hidden'}}>
+              <div className="progress-bar" style={{height:'100%', borderRadius:99,
+                width:Math.min(100,Math.round(((state.dailyXp||0)/dailyGoal)*100))+'%',
+                background:(state.dailyXp||0)>=dailyGoal?'linear-gradient(90deg,#059669,#10b981)':'linear-gradient(90deg,#6366f1,#8b5cf6)'
+              }}/>
+            </div>
+            <div style={{fontSize:11, color:dark?'#52525b':'#94a3b8', marginTop:6}}>
+              {lang==='fr'?'Complète des leçons et exercices pour progresser':lang==='en'?'Complete lessons and exercises to progress':'Complete lecciones para progresar'}
+            </div>
+          </div>
         </div>
 
         {/* ── Compte Google ────────────────────────────────────────────────── */}
@@ -4507,6 +4500,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     return (
       <PhoneFrame>
         {confetti && <ConfettiOverlay/>}
+      <ToastOverlay/>
         <div className='scroll-y' style={{flex:1, overflowY:'auto', padding:'20px 20px 24px', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center'}}>
           {/* Emoji animé */}
           <div className="bounce-in" style={{fontSize:72, marginBottom:12, lineHeight:1, marginTop:8}}>{resultEmoji}</div>
