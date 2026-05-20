@@ -2961,6 +2961,22 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
+  // Nettoie le texte pour le TTS : supprime backticks, HTML, markdown, code
+  // (sinon les voix épèlent les symboles de façon robotique)
+  function cleanForTTS(txt) {
+    return txt
+      .replace(/`([^`\n]{1,120})`/g, '$1')    // `code` → code
+      .replace(/<\/?[a-zA-Z][^>]{0,80}>/g, ' ')  // balises HTML → espace
+      .replace(/\*\*([^*]+)\*\*/g, '$1')        // **bold** → bold
+      .replace(/\*([^*]+)\*/g, '$1')              // *italic* → italic
+      .replace(/#{1,6} /g, '')                     // ## titre → titre
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [lien](url) → lien
+      .replace(/([a-z])([A-Z])/g, '$1 $2')         // camelCase → camel Case
+      .replace(/[_]{1,2}([^_]+)[_]{1,2}/g, '$1')  // _underline_ → underline
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   // Sélection de la voix la plus humaine : Microsoft Neural (Edge) >
   // Google Neural (Chrome) > Enhanced/Natural (Safari) > Online > local
   function pickBestVoice(ttsLang) {
@@ -2981,10 +2997,12 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     );
   }
 
-  function speakText(text) {
-    if (!text) return;
+  function speakText(rawText) {
+    if (!rawText) return;
     if (ttsPlaying) { stopAudio(); return; }
     stopAudio();
+    const text = cleanForTTS(rawText); // supprime backticks, HTML, markdown
+    if (!text) { return; }
     setTtsPlaying(true);
     const tl = GTRANSLATE_LANG[lang] || 'fr';
     const ttsLang = TTS_LANG[lang] || 'fr-FR';
@@ -3022,8 +3040,45 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
       setTimeout(() => { if (!done) { done = true; doSpeak(); } }, 600);
     }
 
-    // Sur iOS : appel synchrone direct (toujours dans le contexte du geste)
-    if (isIOS) { useWebSpeech(text); return; }
+    // Sur iOS 14+ : play() synchrone depuis le geste débloque l'audio session.
+    // On tente Google TTS d'abord (voix bien plus humaine que les voix compactes
+    // système iOS). Si ça échoue, useWebSpeech() reste accessible car la session
+    // est débloquée dès le 1er play().
+    if (isIOS) {
+      const iosSents = text.split(/(?<=[.!?;])\s+/);
+      const iosChunks = [];
+      let iosCur = '';
+      for (const s of iosSents) {
+        if ((iosCur + ' ' + s).length > 175 && iosCur) { iosChunks.push(iosCur.trim()); iosCur = s; }
+        else iosCur = iosCur ? iosCur + ' ' + s : s;
+      }
+      if (iosCur.trim()) iosChunks.push(iosCur.trim());
+      if (!iosChunks.length) { setTtsPlaying(false); return; }
+      let iosIdx = 0, iosFallback = false;
+      function playIOSChunk() {
+        if (iosFallback) return;
+        if (iosIdx >= iosChunks.length) { setTtsPlaying(false); audioRef.current = null; return; }
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(iosChunks[iosIdx])}&tl=${tl}&client=tw-ob`;
+        const audio = new Audio();
+        audioRef.current = audio;
+        audio.playbackRate = Math.max(0.5, Math.min(ttsSpeed * 1.1, 2.0));
+        audio.onended = () => { iosIdx++; playIOSChunk(); };
+        audio.onerror = () => {
+          if (iosFallback) return; iosFallback = true;
+          audioRef.current = null;
+          useWebSpeech(iosChunks.slice(iosIdx).join(' '));
+        };
+        audio.src = url; // set src APRÈS les handlers pour éviter un préchargement prématuré
+        const p = audio.play();
+        if (p) p.catch(() => {
+          if (iosFallback) return; iosFallback = true;
+          audioRef.current = null;
+          useWebSpeech(iosChunks.slice(iosIdx).join(' '));
+        });
+      }
+      playIOSChunk();
+      return;
+    }
 
     // Sur desktop/Android : si voix neurale disponible, on préfère Web Speech API
     // (Microsoft Neural sur Edge, Google Neural sur Chrome = bien plus humain
