@@ -4122,7 +4122,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
           <div style={{padding:'13px 16px'}}>
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8}}>
               <div style={{fontSize:14, fontWeight:600, color:dark?'#fafafa':'#0f172a'}}>
-                {lang==='fr'?'XP aujourd'hui':lang==='en'?'XP today':lang==='es'?'XP hoy':'XP aujourd'hui'}
+                {lang==='fr'?"XP aujourd'hui":lang==='en'?'XP today':lang==='es'?'XP hoy':"XP aujourd'hui"}
               </div>
               <div style={{fontSize:12, fontWeight:700, color:
                 (state.dailyXp||0)>=dailyGoal?(dark?'#6ee7b7':'#059669'):(dark?'#a5b4fc':'#6366f1')
