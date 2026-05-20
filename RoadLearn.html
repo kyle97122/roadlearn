@@ -263,6 +263,18 @@ const L_GOOGLE = {
   ja:{signIn:"Googleでログイン",signOut:"ログアウト",connected:"接続済み",setup:"無料のGeminiキーを設定"},
 };
 
+// ── Textes des notifications push (multilingue) ───────────────────────────────
+const L_NOTIF = {
+  fr:{ dailyTitle:'📚 RoadLearn', dailyBody:'C\'est l\'heure de ta leçon du jour ! 🚀', streakTitle:'🔥 Ta série est en danger !', streakBody:'Tu n\'as pas encore joué aujourd\'hui. Reviens vite pour garder ta série !', testTitle:'🔔 Notifications actives', testBody:'Les rappels RoadLearn fonctionnent parfaitement ✅' },
+  en:{ dailyTitle:'📚 RoadLearn', dailyBody:'Time for your daily lesson! 🚀', streakTitle:'🔥 Your streak is at risk!', streakBody:'You haven\'t played today. Come back now to keep your streak!', testTitle:'🔔 Notifications active', testBody:'RoadLearn reminders are working correctly ✅' },
+  es:{ dailyTitle:'📚 RoadLearn', dailyBody:'¡Es hora de tu lección diaria! 🚀', streakTitle:'🔥 ¡Tu racha está en peligro!', streakBody:'Aún no has jugado hoy. ¡Vuelve ahora para mantener tu racha!', testTitle:'🔔 Notificaciones activas', testBody:'Los recordatorios de RoadLearn funcionan correctamente ✅' },
+  pt:{ dailyTitle:'📚 RoadLearn', dailyBody:'Hora da sua lição diária! 🚀', streakTitle:'🔥 Sua sequência está em risco!', streakBody:'Você ainda não jogou hoje. Volte agora para manter sua sequência!', testTitle:'🔔 Notificações ativas', testBody:'Os lembretes do RoadLearn estão funcionando ✅' },
+  de:{ dailyTitle:'📚 RoadLearn', dailyBody:'Zeit für deine tägliche Lektion! 🚀', streakTitle:'🔥 Deine Serie ist in Gefahr!', streakBody:'Du hast heute noch nicht gespielt. Komm zurück und bewahre deine Serie!', testTitle:'🔔 Benachrichtigungen aktiv', testBody:'Die RoadLearn-Erinnerungen funktionieren korrekt ✅' },
+  it:{ dailyTitle:'📚 RoadLearn', dailyBody:'È ora della tua lezione quotidiana! 🚀', streakTitle:'🔥 La tua serie è in pericolo!', streakBody:'Non hai ancora giocato oggi. Torna ora per mantenere la tua serie!', testTitle:'🔔 Notifiche attive', testBody:'I promemoria di RoadLearn funzionano correttamente ✅' },
+  nl:{ dailyTitle:'📚 RoadLearn', dailyBody:'Tijd voor je dagelijkse les! 🚀', streakTitle:'🔥 Je reeks is in gevaar!', streakBody:'Je hebt vandaag nog niet gespeeld. Kom terug om je reeks te bewaren!', testTitle:'🔔 Meldingen actief', testBody:'De RoadLearn-herinneringen werken correct ✅' },
+  ja:{ dailyTitle:'📚 RoadLearn', dailyBody:'今日のレッスンの時間です！🚀', streakTitle:'🔥 ストリークが危ない！', streakBody:'今日まだプレイしていません。今すぐ戻ってストリークを守ろう！', testTitle:'🔔 通知が有効', testBody:'RoadLearnのリマインダーが正常に動作しています ✅' },
+};
+
 // ── Traductions ───────────────────────────────────────────────────────────────
 const TRANSLATIONS = {
   fr:{ nav:{home:"Accueil",lb:"Classement",badges:"Badges",profile:"Profil",settings:"Paramètres"}, settings:{title:"Paramètres",lang:"Langue",appearance:"Apparence",darkMode:"Mode sombre",notifications:"Notifications",notifGlobal:"Activer les notifications",notifLesson:"Rappels de leçons",notifStreak:"Rappels de série",notifLb:"Mises à jour classement",notifTime:"Heure du rappel",notifPerm:"Autoriser les notifications",version:"version",notifRequired:"⚠️ Permission requise",toLightMode:"Passer en mode clair",toDarkMode:"Passer en mode sombre"}, tts:{listen:"Écouter",stop:"Arrêter",tip:"Rappel de cours"}, home:{resume:"REPRENDRE",daily:"DÉFI DU JOUR",dailyQ:"Question du jour",dailyDone:"Défi du jour complété !",dailyCorrect:"+20 XP gagnés 🎉",dailyWrong:"+5 XP · Reviens demain",ok:"✅ Bonne réponse ! +20 XP",nok:"❌ Pas tout à fait… +5 XP",activity:"ACTIVITÉ",streakCurrent:"Série actuelle",streakBest:"Meilleure série",activeDays:"Jours actifs",ago60:"Il y a 60j",today:"Aujourd'hui",roadmaps:"ROADMAPS DISPONIBLES",xpTotal:"XP totaux",days:"Jours",streakMsg:"jours de série !",streakSub:"Incroyable — tu es vraiment assidu",googleAccount:"COMPTE GOOGLE",you:"Toi",nextLvl:"niv."}, start:{subtitle:"Apprends le développement web, étape par étape · Aucun compte requis.",nameLabel:"Comment tu t'appelles ?",nameOpt:"(optionnel)",startBtn:"Commencer gratuitement →",footer:"🔒 Cours intégrés · Aucune clé API nécessaire"} },
@@ -2339,6 +2351,7 @@ function RoadLearn() {
   const translCache = React.useRef({});              // cache: translCache[lang][cacheKey] = steps
   const [profilePhoto, setProfilePhoto] = useState(null); // base64 data URL ou null
   const photoInputRef = React.useRef(null);
+  const notifTimerRef = React.useRef(null);
 
   // ── Thème + langue + notifications ────────────────────────────────────────
   useEffect(() => {
@@ -2461,6 +2474,66 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     setNotifPerm(perm);
     if (perm === 'granted') saveNotif({ ...notifSettings, global: true });
   }
+
+  // ── Envoi effectif d'une notification (SW d'abord, fallback new Notification) ──
+  async function sendNotif(title, body, tag) {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(title, {
+          body, tag: tag || 'rl',
+          icon: './icon.svg',
+          badge: './icon.svg',
+          requireInteraction: false,
+        });
+      } else {
+        new Notification(title, { body, icon: './icon.svg', tag: tag || 'rl' });
+      }
+    } catch(e) {
+      try { new Notification(title, { body, icon: './icon.svg', tag: tag || 'rl' }); } catch(_) {}
+    }
+  }
+
+  // ── Planification du rappel quotidien ────────────────────────────────────────
+  useEffect(() => {
+    if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
+    if (!notifSettings.global || notifPerm !== 'granted') return;
+
+    function scheduleNext() {
+      const now = new Date();
+      const [h, m] = (notifSettings.time || '19:00').split(':').map(Number);
+      const next = new Date(now);
+      next.setHours(h, m, 0, 0);
+      if (next <= now) next.setDate(next.getDate() + 1); // demain si l'heure est passée
+      const delay = next - now;
+
+      notifTimerRef.current = setTimeout(async () => {
+        // Lire les données fraîches depuis localStorage pour éviter les closures périmées
+        const today = new Date().toISOString().slice(0, 10);
+        const lastFired = localStorage.getItem('rl_notif_fired');
+        if (lastFired === today) { scheduleNext(); return; } // déjà notifié aujourd'hui
+
+        const savedGs = JSON.parse(localStorage.getItem('roadlearn_v2') || '{}');
+        const playedToday = (savedGs.gameState?.sessionDates || []).includes(today);
+        const savedNotif = JSON.parse(localStorage.getItem('rl_notif') || '{}');
+        const curLang = localStorage.getItem('rl_lang') || 'fr';
+        const ln = L_NOTIF[curLang] || L_NOTIF.fr;
+
+        if (savedNotif.streak && !playedToday) {
+          await sendNotif(ln.streakTitle, ln.streakBody, 'rl-streak');
+        } else if (savedNotif.lesson) {
+          await sendNotif(ln.dailyTitle, ln.dailyBody, 'rl-daily');
+        }
+        try { localStorage.setItem('rl_notif_fired', today); } catch(_) {}
+        scheduleNext(); // planifier pour le lendemain
+      }, delay);
+    }
+
+    scheduleNext();
+    return () => { if (notifTimerRef.current) clearTimeout(notifTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifSettings.global, notifSettings.time, notifSettings.lesson, notifSettings.streak, notifPerm]);
   const TTS_LANG = { fr:'fr-FR', en:'en-US', es:'es-ES', pt:'pt-BR', de:'de-DE', it:'it-IT', nl:'nl-NL', ja:'ja-JP' };
   function stopAudio() {
     if (audioRef.current) { try { audioRef.current.pause(); } catch(_) {} audioRef.current = null; }
@@ -3486,6 +3559,19 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
               onChange={e=>saveNotif({...notifSettings,time:e.target.value})}
               style={{background:dark?'#09090b':'white',color:dark?'#fafafa':'#0f172a',border:`1.5px solid ${dark?'#27272a':'#e8eaf0'}`,borderRadius:8,padding:'5px 10px',fontSize:13,opacity:notifSettings.global?1:0.35}}/>
           </div>
+          {/* Bouton Tester — vérifie que les notifs fonctionnent */}
+          {notifPerm==='granted'&&notifSettings.global&&(
+            <div style={{padding:'12px 16px',borderTop:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+              <button onClick={()=>{
+                const ln = L_NOTIF[lang]||L_NOTIF.fr;
+                sendNotif(ln.testTitle, ln.testBody, 'rl-test');
+              }} style={{width:'100%',padding:'9px 14px',borderRadius:10,fontSize:13,fontWeight:600,cursor:'pointer',
+                background:dark?'#1c1c1f':'#f3f4f6',color:dark?'#a1a1aa':'#374151',
+                border:`1.5px solid ${dark?'#2d2d30':'#e5e7eb'}`,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                🔔 {lang==='fr'?'Envoyer une notification test':lang==='de'?'Test-Benachrichtigung senden':lang==='es'?'Enviar notificación de prueba':lang==='pt'?'Enviar notificação de teste':lang==='it'?'Invia notifica di prova':lang==='nl'?'Testmelding verzenden':lang==='ja'?'テスト通知を送信':'Send test notification'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── Compte Google ────────────────────────────────────────────────── */}

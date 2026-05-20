@@ -1,5 +1,5 @@
 // RoadLearn Service Worker — Cache stratégie : réseau d'abord, cache en secours
-const CACHE = 'roadlearn-v3';
+const CACHE = 'roadlearn-v4';
 const CORE  = ['./index.html', './manifest.json', './icon.svg'];
 
 // Installation : met en cache les fichiers essentiels
@@ -18,6 +18,18 @@ self.addEventListener('activate', event => {
     )
   );
   return self.clients.claim();
+});
+
+// Notification click → focus ou ouvre l'app
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cls => {
+      const cl = cls.find(c => c.url.includes(self.location.origin));
+      if (cl) return cl.focus();
+      return clients.openWindow('./');
+    })
+  );
 });
 
 // Fetch : réseau d'abord + mise en cache auto des ressources CDN
