@@ -2340,7 +2340,8 @@ function RoadLearn() {
   });
   const [lang, setLang] = useState('fr');
   const [notifSettings, setNotifSettings] = useState({ global:false, lesson:true, streak:true, lb:false, time:'19:00' });
-  const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'default');
+  const notifSupported = typeof Notification !== 'undefined';
+  const [notifPerm, setNotifPerm] = useState(notifSupported ? Notification.permission : 'unsupported');
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const [showTheory, setShowTheory] = useState(false);
   const [translating, setTranslating] = useState(false);
@@ -2469,10 +2470,18 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
   }
   function saveNotif(updated) { setNotifSettings(updated); try { localStorage.setItem('rl_notif', JSON.stringify(updated)); } catch(_) {} }
   async function requestNotifPerm() {
-    if (typeof Notification === 'undefined') return;
-    const perm = await Notification.requestPermission();
-    setNotifPerm(perm);
-    if (perm === 'granted') saveNotif({ ...notifSettings, global: true });
+    if (!notifSupported) return;
+    try {
+      const perm = await Notification.requestPermission();
+      setNotifPerm(perm);
+      if (perm === 'granted') saveNotif({ ...notifSettings, global: true });
+    } catch(e) {
+      // Certains navigateurs utilisent l'ancienne API callback
+      Notification.requestPermission(perm => {
+        setNotifPerm(perm);
+        if (perm === 'granted') saveNotif({ ...notifSettings, global: true });
+      });
+    }
   }
 
   // ── Envoi effectif d'une notification (SW d'abord, fallback new Notification) ──
@@ -3530,7 +3539,26 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         {/* ── Notifications ───────────────────────────────────────────────── */}
         <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.settings.notifications}</div>
         <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-          {notifPerm!=='granted'&&(
+          {/* Cas 1 : non supporté (iOS Safari sans PWA installée) */}
+          {notifPerm==='unsupported'&&(
+            <div style={{padding:'13px 16px',display:'flex',gap:10,alignItems:'flex-start',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+              <span style={{fontSize:18}}>📵</span>
+              <div style={{fontSize:13,color:dark?'#71717a':'#64748b',lineHeight:1.5}}>
+                {lang==='fr'?'Notifications non supportées sur ce navigateur. Installe l\'app sur ton écran d\'accueil pour les activer.':lang==='de'?'Benachrichtigungen werden von diesem Browser nicht unterstützt. Installiere die App auf deinem Startbildschirm.':lang==='es'?'Notificaciones no compatibles con este navegador. Instala la app en tu pantalla de inicio.':lang==='pt'?'Notificações não suportadas neste navegador. Instale o app na tela inicial.':lang==='it'?'Notifiche non supportate da questo browser. Installa l\'app sulla schermata principale.':lang==='nl'?'Meldingen worden niet ondersteund door deze browser. Installeer de app op je startscherm.':lang==='ja'?'このブラウザでは通知はサポートされていません。ホーム画面にアプリを追加してください。':'Notifications not supported by this browser. Install the app on your home screen to enable them.'}
+              </div>
+            </div>
+          )}
+          {/* Cas 2 : permission refusée → instructions manuelles */}
+          {notifPerm==='denied'&&(
+            <div style={{padding:'13px 16px',display:'flex',gap:10,alignItems:'flex-start',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+              <span style={{fontSize:18}}>🚫</span>
+              <div style={{fontSize:13,color:dark?'#71717a':'#64748b',lineHeight:1.5}}>
+                {lang==='fr'?'Notifications bloquées par le navigateur. Va dans les paramètres du site (🔒 dans la barre d\'adresse) et autorise les notifications.':lang==='de'?'Benachrichtigungen vom Browser blockiert. Gehe zu den Website-Einstellungen (🔒 in der Adressleiste) und erlaube Benachrichtigungen.':lang==='es'?'Notificaciones bloqueadas por el navegador. Ve a los ajustes del sitio (🔒 en la barra de dirección) y permite las notificaciones.':lang==='pt'?'Notificações bloqueadas pelo navegador. Vá para as configurações do site (🔒 na barra de endereço) e permita notificações.':lang==='it'?'Notifiche bloccate dal browser. Vai alle impostazioni del sito (🔒 nella barra degli indirizzi) e consenti le notifiche.':lang==='nl'?'Meldingen geblokkeerd door de browser. Ga naar de site-instellingen (🔒 in de adresbalk) en sta meldingen toe.':lang==='ja'?'ブラウザによって通知がブロックされています。アドレスバーの🔒から通知を許可してください。':'Notifications blocked by the browser. Go to site settings (🔒 in the address bar) and allow notifications.'}
+              </div>
+            </div>
+          )}
+          {/* Cas 3 : pas encore demandé → bouton d'autorisation */}
+          {notifPerm==='default'&&(
             <div style={{padding:'12px 16px',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
               <button onClick={requestNotifPerm} style={{width:'100%',padding:11,borderRadius:12,fontSize:14,fontWeight:700,cursor:'pointer',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',border:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:8,boxShadow:'0 4px 16px rgba(99,102,241,0.3)'}}>
                 🔔 {t.settings.notifPerm}
@@ -3538,7 +3566,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             </div>
           )}
           {[
-            {label:t.settings.notifGlobal,sublabel:notifPerm!=='granted'?(t.settings?.notifRequired||'⚠️ Permission requise'):null,val:notifSettings.global&&notifPerm==='granted',dis:notifPerm!=='granted',onChange:v=>saveNotif({...notifSettings,global:v})},
+            {label:t.settings.notifGlobal,sublabel:notifPerm==='denied'?null:notifPerm!=='granted'?(t.settings?.notifRequired||'⚠️ Permission requise'):null,val:notifSettings.global&&notifPerm==='granted',dis:notifPerm!=='granted',onChange:v=>saveNotif({...notifSettings,global:v})},
             {label:t.settings.notifLesson,val:notifSettings.global&&notifSettings.lesson,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,lesson:v})},
             {label:t.settings.notifStreak,val:notifSettings.global&&notifSettings.streak,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,streak:v})},
             {label:t.settings.notifLb,val:notifSettings.global&&notifSettings.lb,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,lb:v})},
