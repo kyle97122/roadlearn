@@ -24,37 +24,48 @@
 <!-- Synced with RoadLearn.jsx vWATCHDOG-2026-05-11 -->
 <link rel="stylesheet" href="style.css">
 <style>
-  /* ── CSS Design Tokens (WCAG AA compliant) ──────── */
+  /* ── CSS Design Tokens ──────────────────────── */
   :root {
     --color-primary: #6366f1;
-    --color-primary-hover: #4f46e5;
+    --color-primary-dark: #4f46e5;
     --color-accent: #3b82f6;
     --color-bg: #ffffff;
-    --color-bg2: #f8fafc;
-    --color-border: #e5e7eb;
-    --color-text: #111827;
-    --color-text2: #6b7280;
+    --color-bg2: #f6f7fb;
+    --color-bg3: #eef0f8;
+    --color-border: #e8eaf0;
+    --color-text: #0f172a;
+    --color-text2: #64748b;
+    --color-text3: #94a3b8;
     --color-success: #059669;
     --color-danger: #dc2626;
-    --radius-card: 12px;
-    --shadow-card: 0 2px 8px rgba(0,0,0,0.07), 0 0 1px rgba(0,0,0,0.06);
-    --shadow-card-hover: 0 4px 20px rgba(0,0,0,0.10);
-    --transition-fast: all 0.15s ease;
-    --transition-smooth: all 0.2s ease;
+    --color-warn: #d97706;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+    --shadow-xs: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.07), 0 0 1px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05);
+    --shadow-lg: 0 8px 32px rgba(99,102,241,0.15), 0 2px 8px rgba(0,0,0,0.06);
+    --nav-height: 58px;
   }
   .dark {
-    --color-bg: #070707;
-    --color-bg2: #161616;
-    --color-border: #2a2a2a;
-    --color-text: #f9fafb;
-    --color-text2: #9ca3af;
-    --shadow-card: 0 2px 8px rgba(0,0,0,0.5);
-    --shadow-card-hover: 0 4px 20px rgba(0,0,0,0.7);
+    --color-bg: #09090b;
+    --color-bg2: #111113;
+    --color-bg3: #1a1a1e;
+    --color-border: #27272a;
+    --color-text: #fafafa;
+    --color-text2: #a1a1aa;
+    --color-text3: #52525b;
+    --shadow-xs: 0 1px 3px rgba(0,0,0,0.4);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.5);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.6);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.7);
   }
 
   *, *::before, *::after { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-  html { transition: background-color 0.3s ease; }
-  body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+  html { transition: background-color 0.25s ease; }
+  body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; background: var(--color-bg); color: var(--color-text); }
   @media (max-width: 480px) {
     .phone-wrap { padding: 0 !important; }
     .phone-frame { border-radius: 0 !important; max-height: 100vh !important; min-height: 100vh !important; box-shadow: none !important; }
@@ -66,13 +77,13 @@
   .animate-spin { animation: spin 1s linear infinite; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-  .fade-in { animation: fadeIn 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .fade-in { animation: fadeIn 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
-  .slide-up { animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  @keyframes slideUp { from { opacity:0; transform:translateY(24px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
+  .slide-up { animation: slideUp 0.28s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+  @keyframes slideUp { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
 
-  .bounce-in { animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .bounce-in { animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
   @keyframes bounceIn { 0% { opacity:0; transform:scale(0.5); } 80% { transform:scale(1.06); } 100% { opacity:1; transform:scale(1); } }
 
   .pulse-once { animation: pulseOnce 0.5s ease; }
@@ -80,30 +91,42 @@
 
   /* ── Transitions globales ───────────────────── */
   button, a, input { transition: all 0.15s ease; }
-  button:active:not(:disabled) { transform: scale(0.96); }
+  button:active:not(:disabled) { transform: scale(0.95); opacity: 0.88; }
 
   /* ── Scrollbar ──────────────────────────────── */
-  ::-webkit-scrollbar { width: 2px; }
+  ::-webkit-scrollbar { width: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
-  .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
-
-  /* ── Dark mode body ─────────────────────────── */
-  .dark body { background-color: #070707; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+  .dark ::-webkit-scrollbar-thumb { background: #3f3f46; }
 
   /* ── Card hover effect ──────────────────────── */
-  .card-hover { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  .card-hover:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-  .dark .card-hover:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  .card-hover { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+  .card-hover:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
   /* ── Glass effect ───────────────────────────── */
-  .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .glass { backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); }
 
   /* ── Progress bar animated ──────────────────── */
-  .progress-bar { transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+  .progress-bar { transition: width 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 
   /* ── Input focus ────────────────────────────── */
   input:focus { outline: none; }
+  input:focus-visible { box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+
+  /* ── Bottom nav indicator ───────────────────── */
+  .nav-indicator {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 20px; height: 3px; border-radius: 0 0 3px 3px;
+    background: var(--color-primary);
+    animation: fadeIn 0.2s ease both;
+  }
+
+  /* ── Section label ──────────────────────────── */
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--color-text3);
+    padding: 0 16px; margin-bottom: 8px; margin-top: 4px;
+  }
 
   /* ── Confetti ───────────────────────────────── */
   @keyframes confettiFall {
@@ -127,10 +150,11 @@
   .dark .dc-btn-wrong   { background:#450a0a !important; border-color:#b91c1c !important; color:#fca5a5 !important; }
 </style>
 <script>
-  // Anti-flash thème : applique le thème sauvegardé avant le premier rendu
+  // Anti-flash thème : applique le thème sauvegardé ou détecte la préférence système
   (function() {
     try {
-      var t = localStorage.getItem('rl_theme') || 'dark';
+      var saved = localStorage.getItem('rl_theme');
+      var t = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       document.documentElement.setAttribute('data-theme', t);
       if (t === 'dark') document.documentElement.classList.add('dark');
     } catch(e) {}
@@ -2294,7 +2318,13 @@ function RoadLearn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [resultData, setResultData] = useState(null);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rl_theme');
+      if (saved) return saved === 'dark';
+      return window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
+    } catch(_) { return false; }
+  });
   const [lang, setLang] = useState('fr');
   const [notifSettings, setNotifSettings] = useState({ global:false, lesson:true, streak:true, lb:false, time:'19:00' });
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'default');
@@ -2311,17 +2341,19 @@ function RoadLearn() {
 
   // ── Thème + langue + notifications ────────────────────────────────────────
   useEffect(() => {
+    function applyTheme(isDark) {
+      setDark(isDark);
+      document.documentElement.classList.toggle('dark', isDark);
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      const metaTheme = document.getElementById('theme-color-meta');
+      if (metaTheme) metaTheme.content = isDark ? '#070707' : '#6366f1';
+    }
     try {
       const savedTheme = localStorage.getItem('rl_theme');
-      if (savedTheme === 'dark') {
-        setDark(true);
-        document.documentElement.classList.add('dark');
-        document.documentElement.setAttribute('data-theme', 'dark');
-        const metaTheme = document.getElementById('theme-color-meta');
-        if (metaTheme) metaTheme.content = '#070707';
-      } else {
-        document.documentElement.setAttribute('data-theme', 'light');
-      }
+      const isDark = savedTheme
+        ? savedTheme === 'dark'
+        : (window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false);
+      applyTheme(isDark);
       const savedLang = localStorage.getItem('rl_lang');
       if (savedLang && TRANSLATIONS[savedLang]) setLang(savedLang);
       const savedNotif = localStorage.getItem('rl_notif');
@@ -2331,6 +2363,13 @@ function RoadLearn() {
       const savedPhoto = localStorage.getItem('rl_photo');
       if (savedPhoto) setProfilePhoto(savedPhoto);
     } catch(_) {}
+    // Listener pour changements de préférence système (si pas de préférence sauvegardée)
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) {
+      const handler = e => { if (!localStorage.getItem('rl_theme')) applyTheme(e.matches); };
+      mq.addEventListener('change', handler);
+      return () => mq.removeEventListener('change', handler);
+    }
   }, []);
 
   function toggleTheme() {
@@ -2846,13 +2885,19 @@ function RoadLearn() {
   // ── Layouts ───────────────────────────────────────────────────────────────
   // PhoneFrame : height 100dvh → nav toujours en bas
   const PhoneFrame = ({children}) => (
-    <div style={{height:'100dvh',overflow:'hidden',display:'flex',flexDirection:'column',background:dark?'#0f0f0f':'#ffffff'}}>
+    <div style={{height:'100dvh',overflow:'hidden',display:'flex',flexDirection:'column',background:dark?'#09090b':'#ffffff'}}>
       {children}
     </div>
   );
 
   const BottomNav = ({active}) => (
-    <div style={{borderTop:`1px solid ${dark?'#161616':'#f3f4f6'}`,background:dark?'#0f0f0f':'#ffffff',display:'flex',flexShrink:0}}>
+    <div style={{
+      borderTop:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`,
+      background:dark?'rgba(9,9,11,0.97)':'rgba(255,255,255,0.97)',
+      backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
+      display:'flex',flexShrink:0,
+      paddingBottom:'env(safe-area-inset-bottom,0px)'
+    }}>
       {[
         {id:"home",    icon:Home,      label:t.nav.home},
         {id:"lb",      icon:Trophy,    label:t.nav.lb},
@@ -2862,10 +2907,10 @@ function RoadLearn() {
         const isActive = active===id;
         return (
           <button key={id} onClick={()=>navTo(id)}
-            style={{flex:1,paddingTop:8,paddingBottom:6,display:'flex',flexDirection:'column',alignItems:'center',gap:2,color:isActive?'#3b82f6':dark?'#6b7280':'#9ca3af',background:'none',border:'none',cursor:'pointer'}}>
-            <Ic size={19}/>
-            <span style={{fontSize:10,fontWeight:isActive?600:400}}>{label}</span>
-            {isActive&&<div style={{width:4,height:4,borderRadius:'50%',background:'#3b82f6',marginTop:1}}/>}
+            style={{flex:1,paddingTop:10,paddingBottom:8,display:'flex',flexDirection:'column',alignItems:'center',gap:3,color:isActive?'#6366f1':dark?'#52525b':'#a8a8b3',background:'none',border:'none',cursor:'pointer',position:'relative'}}>
+            {isActive && <span className="nav-indicator"/>}
+            <Ic size={20}/>
+            <span style={{fontSize:10,fontWeight:isActive?600:400,letterSpacing:0.1}}>{label}</span>
           </button>
         );
       })}
@@ -2875,62 +2920,64 @@ function RoadLearn() {
   // ── Écran bienvenue ───────────────────────────────────────────────────────
   if (!hasStarted) return (
     <PhoneFrame>
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 fade-in">
+      <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'32px 24px', overflowY:'auto'}}>
         {/* Logo animé */}
-        <div className="bounce-in" style={{marginBottom:20}}>
+        <div className="bounce-in" style={{marginBottom:22}}>
           <div style={{
-            width:80, height:80, borderRadius:24,
-            background:'linear-gradient(135deg,#3b82f6,#6366f1)',
+            width:88, height:88, borderRadius:28,
+            background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
             display:'flex', alignItems:'center', justifyContent:'center',
-            boxShadow:'0 12px 32px rgba(99,102,241,0.35)'
+            boxShadow:'0 16px 40px rgba(99,102,241,0.4), 0 4px 12px rgba(0,0,0,0.1)'
           }}>
-            <span style={{fontSize:36}}>🚀</span>
+            <span style={{fontSize:40}}>🚀</span>
           </div>
         </div>
-        <div style={{fontSize:28, fontWeight:700, marginBottom:6, textAlign:'center', color: dark?'#f9fafb':'#111827'}}>
-          Road<span style={{color:'#3b82f6'}}>Learn</span>
+        <div style={{fontSize:30, fontWeight:800, marginBottom:6, textAlign:'center', color: dark?'#fafafa':'#0f172a', letterSpacing:-1}}>
+          Road<span style={{color:'#6366f1'}}>Learn</span>
         </div>
-        <div style={{fontSize:14, textAlign:'center', marginBottom:32, color: dark?'#9ca3af':'#6b7280', lineHeight:1.6}}>
+        <div style={{fontSize:14, textAlign:'center', marginBottom:28, color: dark?'#a1a1aa':'#64748b', lineHeight:1.65, maxWidth:280}}>
           {t.home?.start?.subtitle||"Apprends le développement web, étape par étape · Aucun compte requis."}
         </div>
 
         {/* Pill badges */}
-        <div style={{display:'flex', gap:8, marginBottom:32, flexWrap:'wrap', justifyContent:'center'}}>
-          {['HTML & CSS','JavaScript','React','Node.js','SQL'].map(t=>(
-            <span key={t} style={{
-              fontSize:11, fontWeight:500, padding:'4px 10px', borderRadius:99,
-              background: dark?'#161616':'#f3f4f6',
-              color: dark?'#9ca3af':'#6b7280'
-            }}>{t}</span>
+        <div style={{display:'flex', gap:7, marginBottom:28, flexWrap:'wrap', justifyContent:'center'}}>
+          {['HTML & CSS','JavaScript','React','Node.js','SQL'].map(badge=>(
+            <span key={badge} style={{
+              fontSize:11, fontWeight:600, padding:'5px 11px', borderRadius:99,
+              background: dark?'rgba(99,102,241,0.1)':'#eef2ff',
+              color: dark?'#a5b4fc':'#6366f1',
+              border:`1px solid ${dark?'rgba(99,102,241,0.2)':'#c7d2fe'}`
+            }}>{badge}</span>
           ))}
         </div>
 
-        <div style={{width:'100%', marginBottom:20}}>
-          <label style={{fontSize:12, fontWeight:600, color: dark?'#9ca3af':'#374151', display:'block', marginBottom:6}}>
-            {t.home?.start?.nameLabel||"Comment tu t'appelles ?"} <span style={{color: dark?'#4b5563':'#9ca3af', fontWeight:400}}>{t.home?.start?.nameOpt||"(optionnel)"}</span>
+        <div style={{width:'100%', marginBottom:16}}>
+          <label style={{fontSize:12, fontWeight:700, color: dark?'#a1a1aa':'#475569', display:'block', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.06em'}}>
+            {t.home?.start?.nameLabel||"Comment tu t'appelles ?"} <span style={{color: dark?'#3f3f46':'#94a3b8', fontWeight:400, textTransform:'none', letterSpacing:0}}>{t.home?.start?.nameOpt||"(optionnel)"}</span>
           </label>
           <input type="text" value={usernameInput} onChange={e=>setUsernameInput(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&handleStart()} placeholder="Ex : Alex" autoFocus
             style={{
-              width:'100%', border:`1.5px solid ${dark?'#2a2a2a':'#e5e7eb'}`,
-              borderRadius:14, padding:'12px 14px', fontSize:14,
-              background: dark?'#161616':'#f9fafb',
-              color: dark?'#f9fafb':'#111827',
-              outline:'none', transition:'border-color 0.2s'
+              width:'100%', border:`1.5px solid ${dark?'#27272a':'#e2e8f0'}`,
+              borderRadius:14, padding:'13px 16px', fontSize:15,
+              background: dark?'#111113':'#f8fafc',
+              color: dark?'#fafafa':'#0f172a',
+              outline:'none', transition:'border-color 0.2s, box-shadow 0.2s'
             }}
-            onFocus={e=>e.target.style.borderColor='#3b82f6'}
-            onBlur={e=>e.target.style.borderColor=dark?'#2a2a2a':'#e5e7eb'}
+            onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.boxShadow='0 0 0 3px rgba(99,102,241,0.15)';}}
+            onBlur={e=>{e.target.style.borderColor=dark?'#27272a':'#e2e8f0';e.target.style.boxShadow='none';}}
           />
         </div>
         <button onClick={handleStart} style={{
-          width:'100%', background:'linear-gradient(135deg,#3b82f6,#6366f1)',
-          color:'white', borderRadius:14, padding:'14px 0', fontSize:15,
-          fontWeight:600, border:'none', cursor:'pointer',
-          boxShadow:'0 8px 24px rgba(99,102,241,0.35)'
+          width:'100%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
+          color:'white', borderRadius:14, padding:'15px 0', fontSize:16,
+          fontWeight:700, border:'none', cursor:'pointer',
+          boxShadow:'0 8px 28px rgba(99,102,241,0.4)',
+          letterSpacing:-0.2
         }}>
           {t.home?.start?.startBtn||"Commencer gratuitement →"}
         </button>
-        <div style={{fontSize:12, color: dark?'#4b5563':'#9ca3af', marginTop:16, textAlign:'center'}}>
+        <div style={{fontSize:12, color: dark?'#3f3f46':'#94a3b8', marginTop:18, textAlign:'center'}}>
           {t.home?.start?.footer||"🔒 Cours intégrés · Aucune clé API nécessaire"}
         </div>
       </div>
@@ -2941,16 +2988,16 @@ function RoadLearn() {
   if (screen === "home") return (
     <PhoneFrame>
       {/* Header */}
-      <div style={{padding:'12px 16px 8px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0}}>
-        <div style={{fontSize:18, fontWeight:700, color: dark?'#f9fafb':'#111827'}}>
-          Road<span style={{color:'#3b82f6'}}>Learn</span>
+      <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
+        <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>
+          Road<span style={{color:'#6366f1'}}>Learn</span>
         </div>
         <div style={{display:'flex', gap:6, alignItems:'center'}}>
-          <div style={{display:'flex', alignItems:'center', gap:4, background: dark?'#1e3a5f':'#eff6ff', color: dark?'#60a5fa':'#1d4ed8', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:600}}>
+          <div style={{display:'flex', alignItems:'center', gap:4, background: dark?'rgba(99,102,241,0.15)':'#eef2ff', color: dark?'#a5b4fc':'#4f46e5', borderRadius:99, padding:'5px 10px', fontSize:11, fontWeight:700}}>
             <Zap size={11}/><span>{state.xp} XP</span>
           </div>
           <div title={`Meilleur streak : ${state.bestStreak||1} jours`}
-            style={{display:'flex', alignItems:'center', gap:4, background: dark?'#451a03':'#fef3c7', color: dark?'#f59e0b':'#b45309', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:600, cursor:'default'}}>
+            style={{display:'flex', alignItems:'center', gap:4, background: dark?'rgba(245,158,11,0.12)':'#fef9e7', color: dark?'#fbbf24':'#b45309', borderRadius:99, padding:'5px 10px', fontSize:11, fontWeight:700, cursor:'default'}}>
             <Flame size={11}/><span>{state.streak}🔥{state.streak>=7?' 🌟':''}</span>
           </div>
           <ThemeToggle/>
@@ -2959,31 +3006,32 @@ function RoadLearn() {
 
       <div style={{flex:1, overflowY:'auto'}}>
         {/* Profil + niveau */}
-        <div style={{margin:'4px 16px 12px', padding:'14px', borderRadius:18,
-          background: dark?'linear-gradient(135deg,#1e3a5f,#1e1b4b)':'linear-gradient(135deg,#eff6ff,#eef2ff)',
-          border:`1px solid ${dark?'#1e3a8a':'#e0e7ff'}`}}>
+        <div style={{margin:'12px 16px', padding:'16px', borderRadius:20,
+          background: dark?'linear-gradient(135deg,#18183a,#1e1b4b)':'linear-gradient(135deg,#eef2ff,#f0f9ff)',
+          border:`1px solid ${dark?'#2d2a6a':'#c7d2fe'}`,
+          boxShadow: dark?'0 4px 20px rgba(99,102,241,0.1)':'0 4px 20px rgba(99,102,241,0.08)'}}>
           <div style={{display:'flex', alignItems:'center', gap:12}}>
             {profilePhoto ? (
-              <img src={profilePhoto} alt="" style={{width:48,height:48,borderRadius:'50%',objectFit:'cover',flexShrink:0,boxShadow:'0 4px 12px rgba(99,102,241,0.4)'}}/>
+              <img src={profilePhoto} alt="" style={{width:50,height:50,borderRadius:'50%',objectFit:'cover',flexShrink:0,boxShadow:'0 4px 14px rgba(99,102,241,0.4)'}}/>
             ) : (
               <div style={{
-                width:48, height:48, borderRadius:'50%', flexShrink:0,
-                background:'linear-gradient(135deg,#3b82f6,#6366f1)',
+                width:50, height:50, borderRadius:'50%', flexShrink:0,
+                background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
                 display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:18, fontWeight:700, color:'white',
-                boxShadow:'0 4px 12px rgba(99,102,241,0.4)'
+                fontSize:19, fontWeight:700, color:'white',
+                boxShadow:'0 4px 14px rgba(99,102,241,0.4)'
               }}>{avatarLetter}</div>
             )}
             <div style={{flex:1}}>
-              <div style={{fontSize:15, fontWeight:600, color: dark?'#f9fafb':'#111827'}}>{username}</div>
-              <div style={{fontSize:12, color: dark?'#93c5fd':'#3b82f6', fontWeight:500}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]}</div>
+              <div style={{fontSize:15, fontWeight:700, color: dark?'#fafafa':'#0f172a', letterSpacing:-0.2}}>{username}</div>
+              <div style={{fontSize:12, color: dark?'#a5b4fc':'#6366f1', fontWeight:600, marginTop:1}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]}</div>
             </div>
           </div>
-          <div style={{marginTop:10}}>
-            <div style={{height:6, background: dark?'#1e3a8a':'#dbeafe', borderRadius:99, overflow:'hidden'}}>
-              <div className="progress-bar" style={{height:'100%', borderRadius:99, background:'linear-gradient(90deg,#3b82f6,#6366f1)', width:`${xpPct}%`}}/>
+          <div style={{marginTop:12}}>
+            <div style={{height:7, background: dark?'rgba(99,102,241,0.2)':'#c7d2fe', borderRadius:99, overflow:'hidden'}}>
+              <div className="progress-bar" style={{height:'100%', borderRadius:99, background:'linear-gradient(90deg,#6366f1,#8b5cf6)', width:`${xpPct}%`}}/>
             </div>
-            <div style={{display:'flex', justifyContent:'space-between', fontSize:11, color: dark?'#93c5fd':'#3b82f6', marginTop:4, fontWeight:500}}>
+            <div style={{display:'flex', justifyContent:'space-between', fontSize:11, color: dark?'#a5b4fc':'#6366f1', marginTop:5, fontWeight:600}}>
               <span>{state.xp} XP</span><span>{ul.next} XP → {t.home?.nextLvl||'niv.'} {ul.n+1}</span>
             </div>
           </div>
@@ -3004,15 +3052,18 @@ function RoadLearn() {
 
         {/* Stats */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, padding:'0 16px', marginBottom:16}}>
-          {[{v:state.xp,l:t.home?.xpTotal||'XP totaux',icon:'⚡'},{v:state.lvlDone,l:(L_PROFILE[lang]||L_PROFILE.fr).levels,icon:'✅'},{v:`${state.streak}`,l:t.home?.days||'Jours',icon:'🔥'}].map((s,i)=>(
+          {[{v:state.xp,l:t.home?.xpTotal||'XP totaux',icon:'⚡',c:dark?'rgba(99,102,241,0.12)':'#eef2ff',tc:dark?'#a5b4fc':'#4f46e5'},
+            {v:state.lvlDone,l:(L_PROFILE[lang]||L_PROFILE.fr).levels,icon:'✅',c:dark?'rgba(5,150,105,0.12)':'#f0fdf4',tc:dark?'#6ee7b7':'#059669'},
+            {v:`${state.streak}`,l:t.home?.days||'Jours',icon:'🔥',c:dark?'rgba(245,158,11,0.12)':'#fef9e7',tc:dark?'#fbbf24':'#b45309'}
+          ].map((s,i)=>(
             <div key={i} style={{
-              background: dark?'#161616':'#f9fafb',
-              border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`,
-              borderRadius:14, padding:'10px 6px', textAlign:'center'
+              background: s.c,
+              border:`1px solid ${dark?'#27272a':'#f1f5f9'}`,
+              borderRadius:16, padding:'12px 6px', textAlign:'center'
             }}>
-              <div style={{fontSize:18, marginBottom:2}}>{s.icon}</div>
-              <div style={{fontSize:17, fontWeight:700, color: dark?'#f9fafb':'#111827'}}>{s.v}</div>
-              <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af', marginTop:2}}>{s.l}</div>
+              <div style={{fontSize:20, marginBottom:3}}>{s.icon}</div>
+              <div style={{fontSize:18, fontWeight:800, color: s.tc, letterSpacing:-0.5}}>{s.v}</div>
+              <div style={{fontSize:10, color: dark?'#52525b':'#94a3b8', marginTop:3, fontWeight:500}}>{s.l}</div>
             </div>
           ))}
         </div>
@@ -3173,33 +3224,34 @@ function RoadLearn() {
     const rankBg = ['linear-gradient(135deg,#fef3c7,#fde68a)','linear-gradient(135deg,#f3f4f6,#e5e7eb)','linear-gradient(135deg,#fed7aa,#fdba74)'];
     return (
       <PhoneFrame>
-        <div style={{padding:'12px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0}}>
-          <div style={{fontSize:18, fontWeight:700, color: dark?'#f9fafb':'#111827'}}>🏆 {t.nav?.lb||'Classement'}</div>
+        <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
+          <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>🏆 {t.nav?.lb||'Classement'}</div>
           <ThemeToggle/>
         </div>
-        <div style={{flex:1, overflowY:'auto', padding:'0 16px 16px'}}>
+        <div style={{flex:1, overflowY:'auto', padding:'12px 16px 16px'}}>
           {sorted.map((u,i) => (
             <div key={i} style={{
               display:'flex', alignItems:'center', gap:10,
-              padding:'10px 12px', borderRadius:14, marginBottom:6,
-              background: u.isYou ? (dark?'#1e3a5f':'#eff6ff') : (dark?'#161616':'#f9fafb'),
-              border:`1px solid ${u.isYou?(dark?'#1e40af':'#bfdbfe'):(dark?'#2a2a2a':'#f3f4f6')}`,
+              padding:'10px 12px', borderRadius:16, marginBottom:7,
+              background: u.isYou ? (dark?'rgba(99,102,241,0.12)':'#eef2ff') : (dark?'#18181b':'#f8f8fd'),
+              border:`1px solid ${u.isYou?(dark?'rgba(99,102,241,0.35)':'#c7d2fe'):(dark?'#27272a':'#eef0f5')}`,
+              boxShadow: u.isYou?(dark?'0 2px 12px rgba(99,102,241,0.12)':'0 2px 12px rgba(99,102,241,0.06)'):'none',
               transition:'all 0.15s'
             }}>
-              <div style={{width:28, textAlign:'center', fontSize:i<3?18:13, fontWeight:600, color: dark?'#9ca3af':'#6b7280'}}>
+              <div style={{width:28, textAlign:'center', fontSize:i<3?18:13, fontWeight:700, color: dark?'#a1a1aa':'#64748b'}}>
                 {i < 3 ? rankEmoji[i] : i+1}
               </div>
               <div style={{
-                width:34, height:34, borderRadius:'50%', flexShrink:0,
-                background: i<3 ? rankBg[i] : (dark?'#2a2a2a':'#e5e7eb'),
+                width:36, height:36, borderRadius:'50%', flexShrink:0,
+                background: i<3 ? rankBg[i] : (dark?'#27272a':'#e8eaf0'),
                 display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:13, fontWeight:700, color: dark?'#0f0f0f':'#374151'
+                fontSize:13, fontWeight:700, color: dark?'#fafafa':'#374151'
               }}>{u.av}</div>
               <div style={{flex:1}}>
-                <div style={{fontSize:14, fontWeight:u.isYou?600:500, color: dark?'#f9fafb':'#111827'}}>{u.n}</div>
-                {u.isYou && <div style={{fontSize:11, color:'#3b82f6', fontWeight:600}}>• {t.home?.you||'Toi'}</div>}
+                <div style={{fontSize:14, fontWeight:u.isYou?700:500, color: dark?'#fafafa':'#0f172a'}}>{u.n}</div>
+                {u.isYou && <div style={{fontSize:11, color:'#6366f1', fontWeight:700}}>• {t.home?.you||'Toi'}</div>}
               </div>
-              <div style={{fontSize:12, fontWeight:700, color: dark?'#60a5fa':'#1d4ed8'}}>{u.xp} XP</div>
+              <div style={{fontSize:13, fontWeight:800, color: dark?'#818cf8':'#6366f1'}}>{u.xp} XP</div>
             </div>
           ))}
         </div>
@@ -3213,32 +3265,33 @@ function RoadLearn() {
     const earnedCount = BADGES.filter(b=>b.check(state)).length;
     return (
       <PhoneFrame>
-        <div style={{padding:'12px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0}}>
+        <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
           <div>
-            <div style={{fontSize:18, fontWeight:700, color: dark?'#f9fafb':'#111827'}}>{(L_BADGES[lang]||L_BADGES.fr).title}</div>
-            <div style={{fontSize:12, color: dark?'#6b7280':'#9ca3af', fontWeight:500}}>
+            <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>{(L_BADGES[lang]||L_BADGES.fr).title}</div>
+            <div style={{fontSize:12, color: dark?'#52525b':'#94a3b8', fontWeight:600}}>
               {earnedCount}/{BADGES.length} {(L_BADGES[lang]||L_BADGES.fr).count}
             </div>
           </div>
           <ThemeToggle/>
         </div>
         <div style={{flex:1, overflowY:'auto'}}>
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, padding:'4px 16px 20px'}}>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, padding:'12px 16px 20px'}}>
             {BADGES.map((b,i)=>{
               const ok = b.check(state);
               const bt = (BADGE_TRANS[lang]||BADGE_TRANS.fr)[i]||{n:b.name,d:b.desc};
               return (
                 <div key={i} className={ok?'bounce-in':''} style={{
-                  border:`1.5px solid ${ok?(dark?'#059669':'#6ee7b7'):(dark?'#2a2a2a':'#f3f4f6')}`,
-                  borderRadius:16, padding:'14px 10px', textAlign:'center',
-                  background: ok?(dark?'#064e3b':'#f0fdf4'):(dark?'#161616':'#f9fafb'),
-                  opacity: ok?1:0.45,
-                  transition:'all 0.2s'
+                  border:`1.5px solid ${ok?(dark?'rgba(52,211,153,0.4)':'#6ee7b7'):(dark?'#27272a':'#e8eaf0')}`,
+                  borderRadius:18, padding:'16px 10px', textAlign:'center',
+                  background: ok?(dark?'rgba(5,150,105,0.1)':'#ecfdf5'):(dark?'#18181b':'#f8f8fd'),
+                  opacity: ok?1:0.38,
+                  transition:'all 0.2s',
+                  boxShadow: ok?(dark?'0 4px 16px rgba(52,211,153,0.1)':'0 4px 16px rgba(5,150,105,0.06)'):'none'
                 }}>
-                  <div style={{fontSize:32, marginBottom:8}}>{b.icon}</div>
-                  <div style={{fontSize:13, fontWeight:600, color: dark?'#f9fafb':'#111827', marginBottom:3}}>{bt.n}</div>
-                  <div style={{fontSize:11, color: dark?'#9ca3af':'#6b7280', lineHeight:1.4}}>{bt.d}</div>
-                  {ok && <div style={{fontSize:11, color: dark?'#34d399':'#059669', fontWeight:600, marginTop:8, display:'flex', alignItems:'center', justifyContent:'center', gap:3}}>
+                  <div style={{fontSize:34, marginBottom:8}}>{b.icon}</div>
+                  <div style={{fontSize:13, fontWeight:700, color: dark?'#fafafa':'#0f172a', marginBottom:4, letterSpacing:-0.2}}>{bt.n}</div>
+                  <div style={{fontSize:11, color: dark?'#71717a':'#64748b', lineHeight:1.45}}>{bt.d}</div>
+                  {ok && <div style={{fontSize:11, color: dark?'#34d399':'#059669', fontWeight:700, marginTop:10, display:'flex', alignItems:'center', justifyContent:'center', gap:3}}>
                     <Check size={11}/>{(L_BADGES[lang]||L_BADGES.fr).unlocked}
                   </div>}
                 </div>
@@ -3254,30 +3307,30 @@ function RoadLearn() {
   // ── Profil ────────────────────────────────────────────────────────────────
   if (screen === "profile") return (
     <PhoneFrame>
-      <div style={{padding:'12px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0}}>
-        <div style={{fontSize:18, fontWeight:700, color: dark?'#f9fafb':'#111827'}}>{(L_PROFILE[lang]||L_PROFILE.fr).title}</div>
+      <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
+        <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>{(L_PROFILE[lang]||L_PROFILE.fr).title}</div>
         <ThemeToggle/>
       </div>
       <div style={{flex:1, overflowY:'auto'}}>
         {/* Avatar + nom */}
-        <div style={{padding:'8px 16px 16px', textAlign:'center'}}>
-          <div style={{position:'relative', width:68, margin:'0 auto 12px'}}>
+        <div style={{padding:'20px 16px 12px', textAlign:'center'}}>
+          <div style={{position:'relative', width:78, margin:'0 auto 14px'}}>
             {profilePhoto ? (
-              <img src={profilePhoto} alt="" style={{width:68,height:68,borderRadius:'50%',objectFit:'cover',display:'block',boxShadow:'0 8px 24px rgba(99,102,241,0.35)'}}/>
+              <img src={profilePhoto} alt="" style={{width:78,height:78,borderRadius:'50%',objectFit:'cover',display:'block',boxShadow:'0 8px 28px rgba(99,102,241,0.4)'}}/>
             ) : (
               <div style={{
-                width:68, height:68, borderRadius:'50%',
-                background:'linear-gradient(135deg,#3b82f6,#6366f1)',
+                width:78, height:78, borderRadius:'50%',
+                background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
                 display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:26, fontWeight:700, color:'white',
-                boxShadow:'0 8px 24px rgba(99,102,241,0.35)'
+                fontSize:28, fontWeight:700, color:'white',
+                boxShadow:'0 8px 28px rgba(99,102,241,0.4)'
               }}>{avatarLetter}</div>
             )}
-            <button onClick={()=>photoInputRef.current&&photoInputRef.current.click()} style={{position:'absolute',bottom:0,right:0,width:22,height:22,borderRadius:'50%',background:'#3b82f6',border:'2px solid '+(dark?'#0f0f0f':'white'),display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
+            <button onClick={()=>photoInputRef.current&&photoInputRef.current.click()} style={{position:'absolute',bottom:0,right:0,width:24,height:24,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',border:'2px solid '+(dark?'#09090b':'white'),display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,boxShadow:'0 2px 8px rgba(99,102,241,0.4)'}}>
               <Camera size={11} color="white"/>
             </button>
             {profilePhoto && (
-              <button onClick={removePhoto} style={{position:'absolute',top:0,right:0,width:18,height:18,borderRadius:'50%',background:'#ef4444',border:'2px solid '+(dark?'#0f0f0f':'white'),display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
+              <button onClick={removePhoto} style={{position:'absolute',top:0,right:0,width:20,height:20,borderRadius:'50%',background:'#ef4444',border:'2px solid '+(dark?'#09090b':'white'),display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
                 <X size={9} className="" style={{color:'white'}}/>
               </button>
             )}
@@ -3289,50 +3342,53 @@ function RoadLearn() {
                 onChange={e=>setUsernameInput(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&saveUsername()} autoFocus
                 style={{
-                  border:`1.5px solid #3b82f6`, borderRadius:10, padding:'6px 12px',
-                  fontSize:14, textAlign:'center', width:140,
-                  background: dark?'#161616':'white', color: dark?'#f9fafb':'#111827'
+                  border:`1.5px solid #6366f1`, borderRadius:10, padding:'7px 14px',
+                  fontSize:14, textAlign:'center', width:150,
+                  background: dark?'#18181b':'white', color: dark?'#fafafa':'#0f172a'
                 }}/>
               <button onClick={saveUsername} style={{color:'#10b981'}}><Check size={16}/></button>
-              <button onClick={()=>{setEditingUsername(false);setUsernameInput(username);}} style={{color: dark?'#6b7280':'#9ca3af'}}><X size={16}/></button>
+              <button onClick={()=>{setEditingUsername(false);setUsernameInput(username);}} style={{color: dark?'#52525b':'#94a3b8'}}><X size={16}/></button>
             </div>
           ) : (
             <div style={{display:'flex', alignItems:'center', gap:6, justifyContent:'center'}}>
-              <span style={{fontSize:16, fontWeight:600, color: dark?'#f9fafb':'#111827'}}>{username}</span>
-              <button onClick={()=>{setEditingUsername(true);setUsernameInput(username);}} style={{color: dark?'#6b7280':'#9ca3af', padding:2}}><Edit2 size={13}/></button>
+              <span style={{fontSize:17, fontWeight:700, color: dark?'#fafafa':'#0f172a', letterSpacing:-0.3}}>{username}</span>
+              <button onClick={()=>{setEditingUsername(true);setUsernameInput(username);}} style={{color: dark?'#52525b':'#94a3b8', padding:2}}><Edit2 size={13}/></button>
             </div>
           )}
-          <div style={{fontSize:12, color: dark?'#6b7280':'#9ca3af', marginTop:4, fontWeight:500}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]}</div>
+          <div style={{fontSize:12, color: dark?'#818cf8':'#6366f1', marginTop:5, fontWeight:700}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]}</div>
         </div>
 
         {/* Stats */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, padding:'0 16px', marginBottom:16}}>
-          {[{v:state.xp,l:"XP"},{v:state.lvlDone,l:(L_PROFILE[lang]||L_PROFILE.fr).levels},{v:Object.keys(state.done).filter(k=>(state.done[k]||[]).length>0).length,l:(L_PROFILE[lang]||L_PROFILE.fr).roadmaps}].map((s,i)=>(
-            <div key={i} style={{background: dark?'#161616':'#f9fafb', border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`, borderRadius:14, padding:'10px 6px', textAlign:'center'}}>
-              <div style={{fontSize:18, fontWeight:700, color: dark?'#f9fafb':'#111827'}}>{s.v}</div>
-              <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af', marginTop:2}}>{s.l}</div>
+          {[{v:state.xp,l:"XP",c:dark?'rgba(99,102,241,0.1)':'#eef2ff',tc:dark?'#818cf8':'#6366f1'},
+            {v:state.lvlDone,l:(L_PROFILE[lang]||L_PROFILE.fr).levels,c:dark?'rgba(52,211,153,0.1)':'#ecfdf5',tc:dark?'#6ee7b7':'#059669'},
+            {v:Object.keys(state.done).filter(k=>(state.done[k]||[]).length>0).length,l:(L_PROFILE[lang]||L_PROFILE.fr).roadmaps,c:dark?'rgba(251,191,36,0.1)':'#fffbeb',tc:dark?'#fbbf24':'#d97706'}
+          ].map((s,i)=>(
+            <div key={i} style={{background: s.c, border:`1px solid ${dark?'#27272a':'#eef0f5'}`, borderRadius:16, padding:'12px 6px', textAlign:'center'}}>
+              <div style={{fontSize:19, fontWeight:800, color: s.tc, letterSpacing:-0.5}}>{s.v}</div>
+              <div style={{fontSize:10, color: dark?'#52525b':'#94a3b8', marginTop:3, fontWeight:500}}>{s.l}</div>
             </div>
           ))}
         </div>
 
         {/* Progression */}
-        <div style={{fontSize:11, fontWeight:700, color: dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{(L_PROFILE[lang]||L_PROFILE.fr).progression}</div>
-        <div style={{padding:'0 16px', marginBottom:16}}>
-          {(tRoadmaps || ROADMAPS).map((rm,ri)=>{
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{(L_PROFILE[lang]||L_PROFILE.fr).progression}</div>
+        <div style={{margin:'0 16px', marginBottom:16, borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+          {(tRoadmaps || ROADMAPS).map((rm,ri,arr)=>{
             let total=0; rm.sections.forEach(s=>total+=s.levels.length);
             const done=(state.done[rm.id]||[]).length;
             const pct=total?Math.round((done/total)*100):0;
-            const progColors = {frontend:'#3b82f6',backend:'#10b981',devops:'#f59e0b',ai:'#8b5cf6',fullstack:'#ec4899',sql:'#78716c'};
+            const progColors = {frontend:'#6366f1',backend:'#10b981',devops:'#f59e0b',ai:'#8b5cf6',fullstack:'#ec4899',sql:'#78716c'};
             return (
-              <div key={rm.id} style={{display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:`1px solid ${dark?'#161616':'#f9fafb'}`}}>
+              <div key={rm.id} style={{display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderBottom:ri<arr.length-1?`1px solid ${dark?'#27272a':'#eef0f5'}`:'none'}}>
                 <span style={{fontSize:18}}>{rm.icon}</span>
                 <div style={{flex:1, minWidth:0}}>
-                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:4}}>
-                    <span style={{fontSize:13, fontWeight:500, color: dark?'#f9fafb':'#111827'}}>{rm.name}</span>
-                    <span style={{fontSize:11, color: dark?'#6b7280':'#9ca3af'}}>{done}/{total}</span>
+                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:5}}>
+                    <span style={{fontSize:13, fontWeight:600, color: dark?'#fafafa':'#0f172a'}}>{rm.name}</span>
+                    <span style={{fontSize:11, color: dark?'#52525b':'#94a3b8', fontWeight:600}}>{done}/{total}</span>
                   </div>
-                  <div style={{height:4, background: dark?'#2a2a2a':'#f3f4f6', borderRadius:99, overflow:'hidden'}}>
-                    <div className="progress-bar" style={{height:'100%', borderRadius:99, background:progColors[rm.id]||'#3b82f6', width:`${pct}%`}}/>
+                  <div style={{height:5, background: dark?'#27272a':'#e8eaf0', borderRadius:99, overflow:'hidden'}}>
+                    <div className="progress-bar" style={{height:'100%', borderRadius:99, background:progColors[rm.id]||'#6366f1', width:`${pct}%`}}/>
                   </div>
                 </div>
               </div>
@@ -3341,21 +3397,21 @@ function RoadLearn() {
         </div>
 
         {/* ── Heatmap activité (60 derniers jours) ─────────────────────── */}
-        <div style={{fontSize:11, fontWeight:700, color: dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{t.home?.activity||'ACTIVITÉ'}</div>
-        <div style={{margin:'0 16px', marginBottom:20, padding:'14px', borderRadius:16, background:dark?'#161616':'#f9fafb', border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.home?.activity||'ACTIVITÉ'}</div>
+        <div style={{margin:'0 16px', marginBottom:20, padding:'14px', borderRadius:16, background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
           {/* Record de série */}
           <div style={{display:'flex', justifyContent:'space-between', marginBottom:12}}>
             <div style={{textAlign:'center'}}>
-              <div style={{fontSize:20, fontWeight:700, color:dark?'#f9fafb':'#111827'}}>{state.streak || 1}🔥</div>
-              <div style={{fontSize:11, color:dark?'#6b7280':'#9ca3af'}}>{t.home?.streakCurrent||'Série actuelle'}</div>
+              <div style={{fontSize:20, fontWeight:800, color:dark?'#fafafa':'#0f172a'}}>{state.streak || 1}🔥</div>
+              <div style={{fontSize:11, color:dark?'#52525b':'#94a3b8'}}>{t.home?.streakCurrent||'Série actuelle'}</div>
             </div>
             <div style={{textAlign:'center'}}>
-              <div style={{fontSize:20, fontWeight:700, color:dark?'#f9fafb':'#111827'}}>{state.bestStreak || 1}🏅</div>
-              <div style={{fontSize:11, color:dark?'#6b7280':'#9ca3af'}}>{t.home?.streakBest||'Meilleure série'}</div>
+              <div style={{fontSize:20, fontWeight:800, color:dark?'#fafafa':'#0f172a'}}>{state.bestStreak || 1}🏅</div>
+              <div style={{fontSize:11, color:dark?'#52525b':'#94a3b8'}}>{t.home?.streakBest||'Meilleure série'}</div>
             </div>
             <div style={{textAlign:'center'}}>
-              <div style={{fontSize:20, fontWeight:700, color:dark?'#f9fafb':'#111827'}}>{(state.sessionDates||[]).length}</div>
-              <div style={{fontSize:11, color:dark?'#6b7280':'#9ca3af'}}>{t.home?.activeDays||'Jours actifs'}</div>
+              <div style={{fontSize:20, fontWeight:800, color:dark?'#fafafa':'#0f172a'}}>{(state.sessionDates||[]).length}</div>
+              <div style={{fontSize:11, color:dark?'#52525b':'#94a3b8'}}>{t.home?.activeDays||'Jours actifs'}</div>
             </div>
           </div>
           {/* Grille 60 jours */}
@@ -3370,27 +3426,30 @@ function RoadLearn() {
                 <div key={i} className="hm-dot"
                   title={key}
                   style={{
-                    background: active?(dark?'#3b82f6':'#3b82f6'):(dark?'#2a2a2a':'#e5e7eb'),
-                    opacity: active ? 1 : 0.5,
-                    outline: isToday ? `2px solid ${dark?'#60a5fa':'#1d4ed8'}` : 'none',
+                    background: active?'#6366f1':(dark?'#27272a':'#e8eaf0'),
+                    opacity: active ? 1 : 0.4,
+                    outline: isToday ? `2px solid ${dark?'#818cf8':'#6366f1'}` : 'none',
                     outlineOffset: '1px',
                   }}/>
               );
             })}
           </div>
-          <div style={{display:'flex', justifyContent:'space-between', marginTop:6}}>
-            <span style={{fontSize:10, color:dark?'#4b5563':'#9ca3af'}}>{t.home?.ago60||'Il y a 60j'}</span>
-            <span style={{fontSize:10, color:dark?'#4b5563':'#9ca3af'}}>{t.home?.today||"Aujourd'hui"}</span>
+          <div style={{display:'flex', justifyContent:'space-between', marginTop:7}}>
+            <span style={{fontSize:10, color:dark?'#3f3f46':'#94a3b8'}}>{t.home?.ago60||'Il y a 60j'}</span>
+            <span style={{fontSize:10, color:dark?'#3f3f46':'#94a3b8'}}>{t.home?.today||"Aujourd'hui"}</span>
           </div>
         </div>
 
         {/* ── Langue ──────────────────────────────────────────────────────── */}
-        <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{t.settings.lang}</div>
-        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#161616':'#f9fafb', border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.settings.lang}</div>
+        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,padding:12}}>
             {[{code:'fr',flag:'🇫🇷',name:'Français'},{code:'en',flag:'🇬🇧',name:'English'},{code:'es',flag:'🇪🇸',name:'Español'},{code:'pt',flag:'🇧🇷',name:'Português'},{code:'de',flag:'🇩🇪',name:'Deutsch'},{code:'it',flag:'🇮🇹',name:'Italiano'},{code:'nl',flag:'🇳🇱',name:'Nederlands'},{code:'ja',flag:'🇯🇵',name:'日本語'}].map(({code,flag,name})=>(
-              <button key={code} onClick={()=>changeLang(code)} style={{padding:'8px 4px',borderRadius:12,fontSize:11,fontWeight:600,cursor:'pointer',textAlign:'center',
-                background:lang===code?'#3b82f6':(dark?'#0f0f0f':'white'),color:lang===code?'#fff':(dark?'#f9fafb':'#111827'),border:`1.5px solid ${lang===code?'#3b82f6':(dark?'#2a2a2a':'#e5e7eb')}`}}>
+              <button key={code} onClick={()=>changeLang(code)} style={{padding:'8px 4px',borderRadius:12,fontSize:11,fontWeight:700,cursor:'pointer',textAlign:'center',
+                background:lang===code?'linear-gradient(135deg,#6366f1,#8b5cf6)':(dark?'#09090b':'white'),
+                color:lang===code?'#fff':(dark?'#fafafa':'#0f172a'),
+                border:`1.5px solid ${lang===code?'transparent':(dark?'#27272a':'#e8eaf0')}`,
+                boxShadow:lang===code?'0 2px 8px rgba(99,102,241,0.3)':'none'}}>
                 <div style={{fontSize:18}}>{flag}</div>
                 <div style={{marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{name}</div>
               </button>
@@ -3399,25 +3458,26 @@ function RoadLearn() {
         </div>
 
         {/* ── Apparence ───────────────────────────────────────────────────── */}
-        <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{t.settings.appearance}</div>
-        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#161616':'#f9fafb', border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderBottom:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
-            <div style={{fontSize:14,color:dark?'#f9fafb':'#111827'}}>{t.settings.darkMode}</div>
-            <div onClick={toggleTheme} style={{width:44,height:26,borderRadius:13,position:'relative',cursor:'pointer',flexShrink:0,background:dark?'#3b82f6':'#d1d5db',transition:'background 0.2s'}}>
-              <div style={{position:'absolute',top:3,left:dark?21:3,width:20,height:20,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,.3)',transition:'left 0.2s'}}/>
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.settings.appearance}</div>
+        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+            <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{t.settings.darkMode}</div>
+            <div onClick={toggleTheme} style={{width:46,height:26,borderRadius:13,position:'relative',cursor:'pointer',flexShrink:0,background:dark?'#6366f1':'#d1d5db',transition:'background 0.2s',boxShadow:dark?'0 0 8px rgba(99,102,241,0.4)':'none'}}>
+              <div style={{position:'absolute',top:3,left:dark?23:3,width:20,height:20,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 4px rgba(0,0,0,.25)',transition:'left 0.2s'}}/>
             </div>
           </div>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px'}}>
             <div>
-              <div style={{fontSize:14,color:dark?'#f9fafb':'#111827'}}>{TTS_SPEED_LABEL[lang]||'Vitesse TTS'}</div>
-              <div style={{fontSize:12,color:dark?'#9ca3af':'#6b7280',marginTop:2}}>{TTS_SPEED_SUB[lang]||'Vitesse de la synthèse vocale'}</div>
+              <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{TTS_SPEED_LABEL[lang]||'Vitesse TTS'}</div>
+              <div style={{fontSize:12,color:dark?'#71717a':'#64748b',marginTop:2}}>{TTS_SPEED_SUB[lang]||'Vitesse de la synthèse vocale'}</div>
             </div>
             <div style={{display:'flex',gap:4}}>
               {[{v:0.65,l:'0.75×'},{v:0.9,l:'1×'},{v:1.15,l:'1.25×'},{v:1.4,l:'1.5×'}].map(({v,l})=>(
-                <button key={v} onClick={()=>changeTtsSpeed(v)} style={{padding:'4px 8px',borderRadius:8,fontSize:11,fontWeight:600,cursor:'pointer',
-                  border:`1.5px solid ${ttsSpeed===v?'#3b82f6':(dark?'#2a2a2a':'#e5e7eb')}`,
-                  background:ttsSpeed===v?'#3b82f6':(dark?'#0f0f0f':'white'),
-                  color:ttsSpeed===v?'white':(dark?'#f9fafb':'#111827')}}>
+                <button key={v} onClick={()=>changeTtsSpeed(v)} style={{padding:'5px 8px',borderRadius:8,fontSize:11,fontWeight:700,cursor:'pointer',
+                  border:`1.5px solid ${ttsSpeed===v?'transparent':(dark?'#27272a':'#e8eaf0')}`,
+                  background:ttsSpeed===v?'linear-gradient(135deg,#6366f1,#8b5cf6)':(dark?'#09090b':'white'),
+                  color:ttsSpeed===v?'white':(dark?'#fafafa':'#0f172a'),
+                  boxShadow:ttsSpeed===v?'0 2px 8px rgba(99,102,241,0.3)':'none'}}>
                   {l}
                 </button>
               ))}
@@ -3426,11 +3486,11 @@ function RoadLearn() {
         </div>
 
         {/* ── Notifications ───────────────────────────────────────────────── */}
-        <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{t.settings.notifications}</div>
-        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#161616':'#f9fafb', border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.settings.notifications}</div>
+        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
           {notifPerm!=='granted'&&(
-            <div style={{padding:'12px 16px',borderBottom:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
-              <button onClick={requestNotifPerm} style={{width:'100%',padding:10,borderRadius:12,fontSize:14,fontWeight:600,cursor:'pointer',background:'#3b82f6',color:'#fff',border:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+            <div style={{padding:'12px 16px',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+              <button onClick={requestNotifPerm} style={{width:'100%',padding:11,borderRadius:12,fontSize:14,fontWeight:700,cursor:'pointer',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',border:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:8,boxShadow:'0 4px 16px rgba(99,102,241,0.3)'}}>
                 🔔 {t.settings.notifPerm}
               </button>
             </div>
@@ -3441,47 +3501,47 @@ function RoadLearn() {
             {label:t.settings.notifStreak,val:notifSettings.global&&notifSettings.streak,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,streak:v})},
             {label:t.settings.notifLb,val:notifSettings.global&&notifSettings.lb,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,lb:v})},
           ].map((r,i,arr)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderBottom:i<arr.length-1?`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`:'none'}}>
+            <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderBottom:i<arr.length-1?`1px solid ${dark?'#27272a':'#eef0f5'}`:'none'}}>
               <div style={{flex:1,paddingRight:12}}>
-                <div style={{fontSize:14,color:dark?'#f9fafb':'#111827'}}>{r.label}</div>
-                {r.sublabel&&<div style={{fontSize:12,color:dark?'#9ca3af':'#6b7280',marginTop:2}}>{r.sublabel}</div>}
+                <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{r.label}</div>
+                {r.sublabel&&<div style={{fontSize:12,color:dark?'#71717a':'#64748b',marginTop:2}}>{r.sublabel}</div>}
               </div>
-              <div onClick={()=>!r.dis&&r.onChange(!r.val)} style={{width:44,height:26,borderRadius:13,position:'relative',cursor:r.dis?'not-allowed':'pointer',flexShrink:0,background:r.val?'#3b82f6':(dark?'#2a2a2a':'#d1d5db'),transition:'background 0.2s',opacity:r.dis?0.4:1}}>
-                <div style={{position:'absolute',top:3,left:r.val?21:3,width:20,height:20,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,.3)',transition:'left 0.2s'}}/>
+              <div onClick={()=>!r.dis&&r.onChange(!r.val)} style={{width:46,height:26,borderRadius:13,position:'relative',cursor:r.dis?'not-allowed':'pointer',flexShrink:0,background:r.val?'#6366f1':(dark?'#27272a':'#d1d5db'),transition:'background 0.2s',opacity:r.dis?0.35:1,boxShadow:r.val?'0 0 8px rgba(99,102,241,0.4)':'none'}}>
+                <div style={{position:'absolute',top:3,left:r.val?23:3,width:20,height:20,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 4px rgba(0,0,0,.25)',transition:'left 0.2s'}}/>
               </div>
             </div>
           ))}
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderTop:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
-            <div style={{fontSize:14,color:dark?'#f9fafb':'#111827'}}>{t.settings.notifTime}</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderTop:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+            <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{t.settings.notifTime}</div>
             <input type="time" value={notifSettings.time} disabled={!notifSettings.global}
               onChange={e=>saveNotif({...notifSettings,time:e.target.value})}
-              style={{background:dark?'#0f0f0f':'white',color:dark?'#f9fafb':'#111827',border:`1px solid ${dark?'#2a2a2a':'#e5e7eb'}`,borderRadius:8,padding:'4px 8px',fontSize:13,opacity:notifSettings.global?1:0.4}}/>
+              style={{background:dark?'#09090b':'white',color:dark?'#fafafa':'#0f172a',border:`1.5px solid ${dark?'#27272a':'#e8eaf0'}`,borderRadius:8,padding:'5px 10px',fontSize:13,opacity:notifSettings.global?1:0.35}}/>
           </div>
         </div>
 
         {/* ── Compte Google ────────────────────────────────────────────────── */}
-        <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{t.home?.googleAccount||'COMPTE GOOGLE'}</div>
-        <div style={{margin:'0 16px 16px', padding:'12px 14px', borderRadius:14, border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`, background:dark?'#161616':'#f9fafb'}}>
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.home?.googleAccount||'COMPTE GOOGLE'}</div>
+        <div style={{margin:'0 16px 16px', padding:'13px 14px', borderRadius:16, border:`1px solid ${dark?'#27272a':'#eef0f5'}`, background:dark?'#18181b':'#f8f8fd'}}>
           {googleUser ? (
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <div style={{display:'flex', alignItems:'center', gap:8}}>
-                <img src={googleUser.picture} style={{width:30, height:30, borderRadius:'50%', border:'2px solid #3b82f6'}} alt=""/>
+              <div style={{display:'flex', alignItems:'center', gap:10}}>
+                <img src={googleUser.picture} style={{width:34, height:34, borderRadius:'50%', border:'2px solid #6366f1', boxShadow:'0 2px 8px rgba(99,102,241,0.3)'}} alt=""/>
                 <div>
-                  <div style={{fontSize:12, fontWeight:600, color:dark?'#f9fafb':'#111827'}}>{googleUser.name}</div>
-                  <div style={{fontSize:10, color:dark?'#6b7280':'#9ca3af'}}>{googleUser.email}</div>
+                  <div style={{fontSize:13, fontWeight:700, color:dark?'#fafafa':'#0f172a'}}>{googleUser.name}</div>
+                  <div style={{fontSize:11, color:dark?'#52525b':'#94a3b8'}}>{googleUser.email}</div>
                 </div>
               </div>
-              <button onClick={googleSignOut} style={{fontSize:11, color:'#ef4444', background:'none', border:'none', cursor:'pointer', fontWeight:600}}>{(L_GOOGLE[lang]||L_GOOGLE.fr).signOut}</button>
+              <button onClick={googleSignOut} style={{fontSize:12, color:'#ef4444', background:'none', border:'none', cursor:'pointer', fontWeight:700}}>{(L_GOOGLE[lang]||L_GOOGLE.fr).signOut}</button>
             </div>
           ) : (
-            <button onClick={googleSignIn} style={{width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:9, background:'white', border:'1.5px solid #e5e7eb', borderRadius:10, padding:'9px 14px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#374151', boxShadow:'0 1px 3px rgba(0,0,0,0.08)'}}>
+            <button onClick={googleSignIn} style={{width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:9, background:'white', border:'1.5px solid #e8eaf0', borderRadius:12, padding:'10px 14px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#374151', boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
               <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
               {(L_GOOGLE[lang]||L_GOOGLE.fr).signIn}
             </button>
           )}
         </div>
 
-        <div style={{textAlign:'center',fontSize:12,color:dark?'#4b5563':'#9ca3af',paddingBottom:20}}>RoadLearn · {t.settings.version} 2.0 · 🏅 {state.bestStreak||1}</div>
+        <div style={{textAlign:'center',fontSize:12,color:dark?'#3f3f46':'#94a3b8',paddingBottom:24}}>RoadLearn · {t.settings.version} 2.0 · 🏅 {state.bestStreak||1}</div>
       </div>
       <BottomNav active="profile"/>
     </PhoneFrame>

@@ -10,11 +10,11 @@
 :root,
 [data-theme="light"] {
   /* Fonds */
-  --bg-base:       #f0f4ff;
+  --bg-base:       #f5f5fa;
   --bg-surface:    #ffffff;
-  --bg-surface-2:  #f8faff;
-  --bg-surface-3:  #eef2ff;
-  --bg-overlay:    rgba(255,255,255,0.85);
+  --bg-surface-2:  #f8f8fd;
+  --bg-surface-3:  #eef0fb;
+  --bg-overlay:    rgba(255,255,255,0.90);
 
   /* Textes */
   --text-primary:   #0f172a;
@@ -23,30 +23,32 @@
   --text-on-accent: #ffffff;
 
   /* Bordures */
-  --border-subtle:  #e2e8f0;
-  --border-medium:  #cbd5e1;
+  --border-subtle:  #e8eaf0;
+  --border-medium:  #c7cbdf;
   --border-strong:  #94a3b8;
 
-  /* Accentuation principale (bleu) */
-  --accent-1:       #3b82f6;
-  --accent-2:       #2563eb;
-  --accent-grad:    linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-  --accent-glow:    0 0 20px rgba(59,130,246,0.35);
+  /* Accentuation principale (indigo/violet) */
+  --accent-1:       #6366f1;
+  --accent-2:       #4f46e5;
+  --accent-3:       #8b5cf6;
+  --accent-grad:    linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --accent-glow:    0 4px 24px rgba(99,102,241,0.30);
+  --accent-subtle:  rgba(99,102,241,0.08);
 
   /* Succès / Erreur */
-  --success:        #10b981;
-  --success-bg:     #d1fae5;
-  --error:          #ef4444;
-  --error-bg:       #fee2e2;
-  --warning:        #f59e0b;
-  --warning-bg:     #fef3c7;
+  --success:        #059669;
+  --success-bg:     #ecfdf5;
+  --error:          #dc2626;
+  --error-bg:       #fef2f2;
+  --warning:        #d97706;
+  --warning-bg:     #fffbeb;
 
   /* Ombres */
-  --shadow-xs:  0 1px 2px rgba(15,23,42,0.06);
-  --shadow-sm:  0 2px 8px rgba(15,23,42,0.08);
-  --shadow-md:  0 4px 16px rgba(15,23,42,0.1);
-  --shadow-lg:  0 8px 32px rgba(15,23,42,0.12);
-  --shadow-xl:  0 16px 48px rgba(15,23,42,0.15);
+  --shadow-xs:  0 1px 2px rgba(15,23,42,0.05);
+  --shadow-sm:  0 2px 8px rgba(15,23,42,0.07), 0 0 1px rgba(15,23,42,0.04);
+  --shadow-md:  0 4px 16px rgba(15,23,42,0.09), 0 1px 4px rgba(15,23,42,0.04);
+  --shadow-lg:  0 8px 32px rgba(99,102,241,0.12), 0 2px 8px rgba(15,23,42,0.06);
+  --shadow-xl:  0 16px 48px rgba(99,102,241,0.14), 0 4px 16px rgba(15,23,42,0.08);
 
   /* Rayon */
   --radius-sm:  8px;
@@ -58,64 +60,66 @@
   /* Transitions */
   --transition-fast:   0.12s ease;
   --transition-normal: 0.22s ease;
-  --transition-slow:   0.35s ease;
+  --transition-slow:   0.30s ease;
 
   /* PWA phone frame */
   --phone-bg:     #ffffff;
-  --phone-border: #e2e8f0;
+  --phone-border: #e8eaf0;
 
   /* Scrollbar */
-  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb: #c7cbdf;
 }
 
 /* ── Variables : THÈME SOMBRE ────────────────────────────────── */
 [data-theme="dark"],
 .dark {
-  /* Fonds */
-  --bg-base:       #0b0f1a;
-  --bg-surface:    #111827;
-  --bg-surface-2:  #1f2937;
-  --bg-surface-3:  #1e293b;
-  --bg-overlay:    rgba(17,24,39,0.9);
+  /* Fonds — zinc (moderne, neutre) */
+  --bg-base:       #09090b;
+  --bg-surface:    #0f0f11;
+  --bg-surface-2:  #18181b;
+  --bg-surface-3:  #27272a;
+  --bg-overlay:    rgba(9,9,11,0.92);
 
   /* Textes */
-  --text-primary:   #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted:     #64748b;
+  --text-primary:   #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted:     #52525b;
   --text-on-accent: #ffffff;
 
   /* Bordures */
-  --border-subtle:  #1e293b;
-  --border-medium:  #334155;
-  --border-strong:  #475569;
+  --border-subtle:  #1c1c1f;
+  --border-medium:  #27272a;
+  --border-strong:  #3f3f46;
 
   /* Accentuation */
-  --accent-1:       #60a5fa;
-  --accent-2:       #3b82f6;
-  --accent-grad:    linear-gradient(135deg, #3b82f6 0%, #818cf8 100%);
-  --accent-glow:    0 0 24px rgba(96,165,250,0.4);
+  --accent-1:       #818cf8;
+  --accent-2:       #6366f1;
+  --accent-3:       #a78bfa;
+  --accent-grad:    linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --accent-glow:    0 4px 24px rgba(99,102,241,0.35);
+  --accent-subtle:  rgba(99,102,241,0.12);
 
   /* Succès / Erreur */
   --success:        #34d399;
-  --success-bg:     rgba(52,211,153,0.15);
+  --success-bg:     rgba(52,211,153,0.12);
   --error:          #f87171;
-  --error-bg:       rgba(248,113,113,0.15);
+  --error-bg:       rgba(248,113,113,0.12);
   --warning:        #fbbf24;
-  --warning-bg:     rgba(251,191,36,0.15);
+  --warning-bg:     rgba(251,191,36,0.12);
 
   /* Ombres */
-  --shadow-xs:  0 1px 2px rgba(0,0,0,0.3);
-  --shadow-sm:  0 2px 8px rgba(0,0,0,0.35);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,0.45);
-  --shadow-xl:  0 16px 48px rgba(0,0,0,0.5);
+  --shadow-xs:  0 1px 2px rgba(0,0,0,0.4);
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.45);
+  --shadow-md:  0 4px 20px rgba(0,0,0,0.55);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.65);
+  --shadow-xl:  0 16px 48px rgba(0,0,0,0.7);
 
   /* PWA phone frame */
-  --phone-bg:     #111827;
-  --phone-border: #1e293b;
+  --phone-bg:     #09090b;
+  --phone-border: #1c1c1f;
 
   /* Scrollbar */
-  --scrollbar-thumb: #334155;
+  --scrollbar-thumb: #3f3f46;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -202,13 +206,14 @@ p { margin: 0; color: var(--text-secondary); }
   color: var(--text-on-accent);
   border: none;
   border-radius: var(--radius-lg);
-  font-weight: 600;
+  font-weight: 700;
   font-family: inherit;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   transition: all var(--transition-fast);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--accent-glow);
+  letter-spacing: -0.01em;
 }
 
 .btn-accent::after {
@@ -220,7 +225,7 @@ p { margin: 0; color: var(--text-secondary); }
 }
 
 .btn-accent:hover::after {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.10);
 }
 
 .btn-accent:active {
@@ -288,8 +293,8 @@ p { margin: 0; color: var(--text-secondary); }
 .bottom-nav {
   background: var(--bg-overlay);
   border-top: 1px solid var(--border-subtle);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .nav-item {
@@ -299,6 +304,20 @@ p { margin: 0; color: var(--text-secondary); }
 
 .nav-item.active {
   color: var(--accent-1);
+}
+
+/* Indicateur actif (barre en haut du bouton nav) */
+.nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--accent-grad);
+  box-shadow: 0 2px 8px rgba(99,102,241,0.5);
+  animation: fadeIn 0.2s ease both;
 }
 
 /* ═══════════════════════════════════════════════════════════════
