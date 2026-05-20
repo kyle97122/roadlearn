@@ -2657,6 +2657,57 @@ function getDailyChallenge() {
   return { ...q, topicKey: key, date: today, theory: MOCK_DB[key].theory };
 }
 
+// ── Layouts (hors RoadLearn → identité stable, pas de remount) ─────────────
+const PhoneFrame = ({dark, children}) => (
+  <div style={{height:'100dvh',overflow:'hidden',display:'flex',flexDirection:'column',background:dark?'#09090b':'#ffffff'}}>
+    {children}
+  </div>
+);
+
+const BottomNav = ({dark, t, navTo, active}) => (
+  <div style={{
+    borderTop:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`,
+    background:dark?'rgba(9,9,11,0.97)':'rgba(255,255,255,0.97)',
+    backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
+    display:'flex',flexShrink:0,
+    paddingBottom:'env(safe-area-inset-bottom,0px)',
+    paddingLeft:4, paddingRight:4, paddingTop:4,
+  }}>
+    {[
+      {id:"home",      icon:Home,          label:t.nav.home},
+      {id:"lb",        icon:Trophy,        label:t.nav.lb},
+      {id:"exercises", icon:ClipboardList, label:t.nav.exercises},
+      {id:"badges",    icon:Medal,         label:t.nav.badges},
+      {id:"profile",   icon:User,          label:t.nav.profile},
+    ].map(({id,icon:Ic,label}) => {
+      const isActive = active===id;
+      return (
+        <button key={id} onClick={()=>navTo(id)}
+          style={{
+            flex:1, paddingTop:8, paddingBottom:7,
+            display:'flex', flexDirection:'column', alignItems:'center', gap:2,
+            color: isActive ? '#6366f1' : dark ? '#52525b' : '#9ca3af',
+            background:'none', border:'none', cursor:'pointer', position:'relative',
+            borderRadius:14, minHeight:50,
+            transition:'color 0.2s ease'
+          }}>
+          {/* Pill background actif */}
+          {isActive && (
+            <span className="nav-pill" style={{
+              background: dark ? 'rgba(99,102,241,0.14)' : 'rgba(99,102,241,0.09)',
+            }}/>
+          )}
+          <Ic size={21}/>
+          <span style={{
+            fontSize:10, fontWeight:isActive?700:400, letterSpacing:0.1,
+            position:'relative', lineHeight:1.2
+          }}>{label}</span>
+        </button>
+      );
+    })}
+  </div>
+);
+
 // ── Composant principal ───────────────────────────────────────────────────────
 function RoadLearn() {
   const [hasStarted, setHasStarted] = useState(false);
@@ -3368,61 +3419,11 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     setScreen("result");
   }
 
-  // ── Layouts ───────────────────────────────────────────────────────────────
-  // PhoneFrame : height 100dvh → nav toujours en bas
-  const PhoneFrame = ({children}) => (
-    <div style={{height:'100dvh',overflow:'hidden',display:'flex',flexDirection:'column',background:dark?'#09090b':'#ffffff'}}>
-      {children}
-    </div>
-  );
-
-  const BottomNav = ({active}) => (
-    <div style={{
-      borderTop:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`,
-      background:dark?'rgba(9,9,11,0.97)':'rgba(255,255,255,0.97)',
-      backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-      display:'flex',flexShrink:0,
-      paddingBottom:'env(safe-area-inset-bottom,0px)',
-      paddingLeft:4, paddingRight:4, paddingTop:4,
-    }}>
-      {[
-        {id:"home",      icon:Home,          label:t.nav.home},
-        {id:"lb",        icon:Trophy,        label:t.nav.lb},
-        {id:"exercises", icon:ClipboardList, label:t.nav.exercises},
-        {id:"badges",    icon:Medal,         label:t.nav.badges},
-        {id:"profile",   icon:User,          label:t.nav.profile},
-      ].map(({id,icon:Ic,label}) => {
-        const isActive = active===id;
-        return (
-          <button key={id} onClick={()=>navTo(id)}
-            style={{
-              flex:1, paddingTop:8, paddingBottom:7,
-              display:'flex', flexDirection:'column', alignItems:'center', gap:2,
-              color: isActive ? '#6366f1' : dark ? '#52525b' : '#9ca3af',
-              background:'none', border:'none', cursor:'pointer', position:'relative',
-              borderRadius:14, minHeight:50,
-              transition:'color 0.2s ease'
-            }}>
-            {/* Pill background actif — style Notion/Linear */}
-            {isActive && (
-              <span className="nav-pill" style={{
-                background: dark ? 'rgba(99,102,241,0.14)' : 'rgba(99,102,241,0.09)',
-              }}/>
-            )}
-            <Ic size={21}/>
-            <span style={{
-              fontSize:10, fontWeight:isActive?700:400, letterSpacing:0.1,
-              position:'relative', lineHeight:1.2
-            }}>{label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+  // ── Layouts : PhoneFrame et BottomNav définis en dehors de RoadLearn ─────
 
   // ── Écran bienvenue ───────────────────────────────────────────────────────
   if (!hasStarted) return (
-    <PhoneFrame>
+    <PhoneFrame dark={dark}>
       <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'32px 24px', overflowY:'auto'}}>
         {/* Logo animé */}
         <div className="bounce-in" style={{marginBottom:22}}>
@@ -3500,7 +3501,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     const sl = ONBOARD_SLIDES[onboardStep];
     const isLast = onboardStep === ONBOARD_SLIDES.length - 1;
     return (
-      <PhoneFrame>
+      <PhoneFrame dark={dark}>
         <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'space-between', padding:'48px 28px 36px', overflowY:'auto'}}>
           {/* Skip */}
           <div style={{width:'100%', display:'flex', justifyContent:'flex-end'}}>
@@ -3547,7 +3548,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
 
   // ── Accueil ───────────────────────────────────────────────────────────────
   if (screen === "home") return (
-    <PhoneFrame>
+    <PhoneFrame dark={dark}>
       {/* Header */}
       <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
         <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>
@@ -3811,7 +3812,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
           })}
         </div>
       </div>
-      <BottomNav active="home"/>
+      <BottomNav dark={dark} t={t} navTo={navTo} active="home"/>
     </PhoneFrame>
   );
 
@@ -3822,7 +3823,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     const rankEmoji = ["🥇","🥈","🥉"];
     const rankBg = ['linear-gradient(135deg,#fef3c7,#fde68a)','linear-gradient(135deg,#f3f4f6,#e5e7eb)','linear-gradient(135deg,#fed7aa,#fdba74)'];
     return (
-      <PhoneFrame>
+      <PhoneFrame dark={dark}>
         <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
           <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>🏆 {t.nav?.lb||'Classement'}</div>
           <button onClick={()=>setTheme(dark?'light':'dark')} title={dark?'Mode clair':'Mode sombre'}
@@ -3857,7 +3858,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             </div>
           ))}
         </div>
-        <BottomNav active="lb"/>
+        <BottomNav dark={dark} t={t} navTo={navTo} active="lb"/>
       </PhoneFrame>
     );
   }
@@ -3866,7 +3867,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
   if (screen === "badges") {
     const earnedCount = BADGES.filter(b=>b.check(state)).length;
     return (
-      <PhoneFrame>
+      <PhoneFrame dark={dark}>
         <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
           <div>
             <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>{(L_BADGES[lang]||L_BADGES.fr).title}</div>
@@ -3904,14 +3905,14 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             })}
           </div>
         </div>
-        <BottomNav active="badges"/>
+        <BottomNav dark={dark} t={t} navTo={navTo} active="badges"/>
       </PhoneFrame>
     );
   }
 
   // ── Profil ────────────────────────────────────────────────────────────────
   if (screen === "profile") return (
-    <PhoneFrame>
+    <PhoneFrame dark={dark}>
       <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
         <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>{(L_PROFILE[lang]||L_PROFILE.fr).title}</div>
         <button onClick={()=>setTheme(dark?'light':'dark')} title={dark?'Mode clair':'Mode sombre'}
@@ -4176,7 +4177,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
 
         <div style={{textAlign:'center',fontSize:12,color:dark?'#3f3f46':'#94a3b8',paddingBottom:24}}>RoadLearn · {t.settings.version} 2.0 · 🏅 {state.bestStreak||1}</div>
       </div>
-      <BottomNav active="profile"/>
+      <BottomNav dark={dark} t={t} navTo={navTo} active="profile"/>
     </PhoneFrame>
   );
 
@@ -4191,7 +4192,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     const progColors = {frontend:'#3b82f6',backend:'#10b981',devops:'#f59e0b',ai:'#8b5cf6',fullstack:'#ec4899',sql:'#78716c'};
     const prog = progColors[rm.id] || '#3b82f6';
     return (
-      <PhoneFrame>
+      <PhoneFrame dark={dark}>
         {/* Header */}
         <div style={{padding:'12px 16px 12px', flexShrink:0}}>
           <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:10}}>
@@ -4293,7 +4294,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     const step = activeSteps[stepIdx];
     const letters = ["A","B","C","D"];
     return (
-      <PhoneFrame>
+      <PhoneFrame dark={dark}>
         {/* Barre de progression leçon */}
         <div style={{padding:'12px 16px 12px', borderBottom:`1px solid ${dark?'#161616':'#f3f4f6'}`, flexShrink:0}}>
           <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:8}}>
@@ -4529,7 +4530,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     }
 
     return (
-      <PhoneFrame>
+      <PhoneFrame dark={dark}>
         {confetti && <ConfettiOverlay/>}
       <ToastOverlay/>
         <div className='scroll-y' style={{flex:1, overflowY:'auto', padding:'20px 20px 24px', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center'}}>
@@ -4705,7 +4706,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
       const totalQ = activeEx.questions.length;
       const alreadyDone = (state.exDoneIds||[]).includes(activeEx.id);
       return (
-        <PhoneFrame>
+        <PhoneFrame dark={dark}>
           {/* Header */}
           <div style={{padding:'14px 16px 10px', background:dark?'#111113':'#fff', borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`, display:'flex', alignItems:'center', gap:10}}>
             <button onClick={()=>setActiveEx(null)} style={{padding:6, borderRadius:10, background:dark?'#1a1a1e':'#f3f4f6', border:'none', cursor:'pointer', color:dark?'#d1d5db':'#6b7280'}}><ArrowLeft size={16}/></button>
@@ -4797,7 +4798,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
       const ringColor = pct>=80?'#059669':pct>=50?catColor:'#6366f1';
       const r=46, circ=2*Math.PI*r, offset=circ-((pct/100)*circ);
       return (
-        <PhoneFrame>
+        <PhoneFrame dark={dark}>
           <div className="scroll-y" style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 20px', overflowY:'auto'}}>
             {/* Ring de progression SVG */}
             <div className="bounce-in" style={{position:'relative', width:120, height:120, marginBottom:20}}>
@@ -4851,14 +4852,14 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
               </button>
             </div>
           </div>
-          <BottomNav active="exercises"/>
+          <BottomNav dark={dark} t={t} navTo={navTo} active="exercises"/>
         </PhoneFrame>
       );
     }
 
     // ── Exercise list ──
     return (
-      <PhoneFrame>
+      <PhoneFrame dark={dark}>
         {/* Header */}
         <div style={{padding:'14px 16px 12px', background:dark?'#111113':'#fff', borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
           <div>
@@ -4940,7 +4941,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             ))}
           </div>
         </div>
-        <BottomNav active="exercises"/>
+        <BottomNav dark={dark} t={t} navTo={navTo} active="exercises"/>
       </PhoneFrame>
     );
   }
