@@ -2335,8 +2335,14 @@ function RoadLearn() {
   const [resultData, setResultData] = useState(null);
   const [dark, setDark] = useState(() => {
     try {
+      const saved = localStorage.getItem('rl_theme');
+      if (saved === 'dark') return true;
+      if (saved === 'light') return false;
       return window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
     } catch(_) { return false; }
+  });
+  const [themeMode, setThemeMode] = useState(() => {
+    try { return localStorage.getItem('rl_theme') || 'auto'; } catch(_) { return 'auto'; }
   });
   const [lang, setLang] = useState('fr');
   const [notifSettings, setNotifSettings] = useState({ global:false, lesson:true, streak:true, lb:false, time:'19:00' });
@@ -2365,10 +2371,13 @@ function RoadLearn() {
       if (metaTheme) metaTheme.content = isDark ? '#070707' : '#6366f1';
     }
     try {
-      // Efface toute préférence sauvegardée manuellement (mode automatique uniquement)
-      localStorage.removeItem('rl_theme');
-      const isDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
-      applyTheme(isDark);
+      const saved = localStorage.getItem('rl_theme');
+      if (saved === 'dark') { applyTheme(true); }
+      else if (saved === 'light') { applyTheme(false); }
+      else {
+        const isDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
+        applyTheme(isDark);
+      }
       const savedLang = localStorage.getItem('rl_lang');
       if (savedLang && TRANSLATIONS[savedLang]) setLang(savedLang);
       const savedNotif = localStorage.getItem('rl_notif');
@@ -2378,16 +2387,33 @@ function RoadLearn() {
       const savedPhoto = localStorage.getItem('rl_photo');
       if (savedPhoto) setProfilePhoto(savedPhoto);
     } catch(_) {}
-    // Listener pour changements de préférence système (toujours actif)
+    // Listener pour changements de préférence système — actif seulement en mode auto
     const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
     if (mq && mq.addEventListener) {
-      const handler = e => applyTheme(e.matches);
+      const handler = e => {
+        const saved = localStorage.getItem('rl_theme');
+        if (!saved || saved === 'auto') applyTheme(e.matches);
+      };
       mq.addEventListener('change', handler);
       return () => mq.removeEventListener('change', handler);
     }
   }, []);
 
 function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang', code); } catch(_) {} }
+  function setTheme(mode) {
+    try {
+      if (mode === 'auto') localStorage.removeItem('rl_theme');
+      else localStorage.setItem('rl_theme', mode);
+    } catch(_) {}
+    const isDark = mode === 'dark' ? true : mode === 'light' ? false
+      : (window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false);
+    setDark(isDark);
+    setThemeMode(mode);
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    const metaTheme = document.getElementById('theme-color-meta');
+    if (metaTheme) metaTheme.content = isDark ? '#070707' : '#6366f1';
+  }
   function changeTtsSpeed(s) { setTtsSpeed(s); try { localStorage.setItem('rl_tts_speed', String(s)); } catch(_) {} }
 
   function handlePhotoChange(e) {
@@ -3535,6 +3561,21 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         {/* ── Apparence ───────────────────────────────────────────────────── */}
         <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.settings.appearance}</div>
         <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+          {/* Thème */}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+            <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{t.settings.darkMode}</div>
+            <div style={{display:'flex',gap:4}}>
+              {[{m:'light',icon:'☀️'},{m:'auto',icon:'🔄'},{m:'dark',icon:'🌙'}].map(({m,icon})=>(
+                <button key={m} onClick={()=>setTheme(m)} style={{width:42,height:42,borderRadius:10,fontSize:18,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',
+                  border:`1.5px solid ${themeMode===m?'transparent':(dark?'#27272a':'#e8eaf0')}`,
+                  background:themeMode===m?'linear-gradient(135deg,#6366f1,#8b5cf6)':(dark?'#09090b':'white'),
+                  boxShadow:themeMode===m?'0 2px 8px rgba(99,102,241,0.3)':'none',
+                  color:themeMode===m?'white':(dark?'#fafafa':'#0f172a')}}>
+                  {icon}
+                </button>
+              ))}
+            </div>
+          </div>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px'}}>
             <div>
               <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{TTS_SPEED_LABEL[lang]||'Vitesse TTS'}</div>
