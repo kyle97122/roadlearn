@@ -3105,6 +3105,10 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             style={{display:'flex', alignItems:'center', gap:4, background: dark?'rgba(245,158,11,0.12)':'#fef9e7', color: dark?'#fbbf24':'#b45309', borderRadius:99, padding:'5px 10px', fontSize:11, fontWeight:700, cursor:'default'}}>
             <Flame size={11}/><span>{state.streak}🔥{state.streak>=7?' 🌟':''}</span>
           </div>
+          <button onClick={()=>setTheme(dark?'light':'dark')} title={dark?'Mode clair':'Mode sombre'}
+            style={{width:32,height:32,borderRadius:10,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,background:dark?'#1c1c1f':'#f3f4f6',color:dark?'#fafafa':'#374151',flexShrink:0}}>
+            {dark?'☀️':'🌙'}
+          </button>
         </div>
       </div>
 
@@ -3330,6 +3334,10 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
       <PhoneFrame>
         <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
           <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>🏆 {t.nav?.lb||'Classement'}</div>
+          <button onClick={()=>setTheme(dark?'light':'dark')} title={dark?'Mode clair':'Mode sombre'}
+            style={{width:32,height:32,borderRadius:10,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,background:dark?'#1c1c1f':'#f3f4f6',color:dark?'#fafafa':'#374151'}}>
+            {dark?'☀️':'🌙'}
+          </button>
         </div>
         <div style={{flex:1, overflowY:'auto', padding:'12px 16px 16px'}}>
           {sorted.map((u,i) => (
@@ -3375,6 +3383,10 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
               {earnedCount}/{BADGES.length} {(L_BADGES[lang]||L_BADGES.fr).count}
             </div>
           </div>
+          <button onClick={()=>setTheme(dark?'light':'dark')} title={dark?'Mode clair':'Mode sombre'}
+            style={{width:32,height:32,borderRadius:10,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,background:dark?'#1c1c1f':'#f3f4f6',color:dark?'#fafafa':'#374151'}}>
+            {dark?'☀️':'🌙'}
+          </button>
         </div>
         <div style={{flex:1, overflowY:'auto'}}>
           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, padding:'12px 16px 20px'}}>
@@ -3411,6 +3423,10 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     <PhoneFrame>
       <div style={{padding:'14px 16px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`}}>
         <div style={{fontSize:19, fontWeight:800, letterSpacing:-0.5, color: dark?'#fafafa':'#0f172a'}}>{(L_PROFILE[lang]||L_PROFILE.fr).title}</div>
+        <button onClick={()=>setTheme(dark?'light':'dark')} title={dark?'Mode clair':'Mode sombre'}
+          style={{width:32,height:32,borderRadius:10,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,background:dark?'#1c1c1f':'#f3f4f6',color:dark?'#fafafa':'#374151'}}>
+          {dark?'☀️':'🌙'}
+        </button>
       </div>
       <div style={{flex:1, overflowY:'auto'}}>
         {/* Avatar + nom */}
@@ -3562,12 +3578,19 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         <div style={{fontSize:11, fontWeight:700, color:dark?'#52525b':'#94a3b8', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8, textTransform:'uppercase'}}>{t.settings.appearance}</div>
         <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#18181b':'#f8f8fd', border:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
           {/* Thème */}
-          <div style={{padding:'12px 16px',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-            <button onClick={()=>setTheme(dark?'light':'dark')} style={{width:'100%',padding:'10px 14px',borderRadius:12,fontSize:14,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,
-              background:dark?'#09090b':'white',color:dark?'#fafafa':'#0f172a',
-              border:`1.5px solid ${dark?'#27272a':'#e8eaf0'}`,boxShadow:'none'}}>
-              {dark?'☀️':'🌙'} {dark?(t.settings.toLightMode||'Passer en mode clair'):(t.settings.toDarkMode||'Passer en mode sombre')}
-            </button>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderBottom:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
+            <div style={{fontSize:14,fontWeight:500,color:dark?'#fafafa':'#0f172a'}}>{t.settings.darkMode}</div>
+            <div style={{display:'flex',gap:4}}>
+              {[{m:'light',icon:'☀️'},{m:'auto',icon:'🔄'},{m:'dark',icon:'🌙'}].map(({m,icon})=>(
+                <button key={m} onClick={()=>setTheme(m)} style={{width:42,height:42,borderRadius:10,fontSize:18,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
+                  border:`1.5px solid ${themeMode===m?'transparent':(dark?'#27272a':'#e8eaf0')}`,
+                  background:themeMode===m?'linear-gradient(135deg,#6366f1,#8b5cf6)':(dark?'#09090b':'white'),
+                  boxShadow:themeMode===m?'0 2px 8px rgba(99,102,241,0.3)':'none',
+                  color:themeMode===m?'white':(dark?'#fafafa':'#0f172a')}}>
+                  {icon}
+                </button>
+              ))}
+            </div>
           </div>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px'}}>
             <div>
