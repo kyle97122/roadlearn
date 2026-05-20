@@ -3696,7 +3696,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                       <span style={{fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:99,background:'#eff6ff',color:'#1d4ed8'}}>+20 XP</span>
                     </div>
                     <div style={{fontSize:13,lineHeight:1.6,color:dark?'#d1d5db':'#374151',marginBottom:12}}>{dc.q}</div>
-                    <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
                       {(dc.answers||[]).map((a,i) => {
                         let cls = '';
                         if (dailyChallengeResult) {
@@ -3707,9 +3707,9 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                         return (
                           <button key={i} onClick={()=>handleDailyChallenge(dc,i)} disabled={!!dailyChallengeResult}
                             className={cls}
-                            style={{padding:'9px 12px',borderRadius:12,fontSize:12,textAlign:'left',cursor:dailyChallengeResult?'default':'pointer',
+                            style={{padding:'9px 8px',borderRadius:12,fontSize:11,textAlign:'left',cursor:dailyChallengeResult?'default':'pointer',
                               border:`1.5px solid ${dark?'#2a2a2a':'#e5e7eb'}`,background:dark?'#0f0f0f':'white',color:dark?'#d1d5db':'#374151',
-                              display:'flex',alignItems:'center',gap:8,transition:'all 0.2s'}}>
+                              display:'flex',alignItems:'center',gap:6,transition:'all 0.2s'}}>
                             <span style={{width:20,height:20,borderRadius:'50%',background:dark?'#2a2a2a':'#e5e7eb',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700,flexShrink:0,color:dark?'#9ca3af':'#6b7280'}}>
                               {letters[i]}
                             </span>
@@ -3738,11 +3738,12 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         <div style={{padding:'0 16px', marginBottom:14}}>
           <div style={{fontSize:11, fontWeight:700, color: dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', marginBottom:8}}>🎯 MISSIONS</div>
           <div style={{display:'flex', flexDirection:'column', gap:8}}>
-            {MISSIONS.map(m => {
+            {(()=>{let _mc=0;return MISSIONS.map(m => {
               const done = m.check(state);
               const claimed = (state.missionsXpClaimed||[]).includes(m.id);
               const p = m.prog(state), pct = Math.round((p/m.total)*100);
               if (claimed) return null;
+              if (_mc>=3) return null; _mc++;
               return (
                 <div key={m.id} style={{borderRadius:14, padding:'12px 14px', border:`1.5px solid ${done?(dark?'rgba(99,102,241,0.4)':'#c7d2fe'):(dark?'#2a2a2a':'#f0f0f5')}`, background:done?(dark?'rgba(99,102,241,0.08)':'#f5f3ff'):(dark?'#161616':'#fafafa')}}>
                   <div style={{display:'flex', alignItems:'center', gap:10}}>
@@ -3763,7 +3764,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                   </div>
                 </div>
               );
-            })}
+            });})()}
           </div>
         </div>
 
@@ -3784,8 +3785,8 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                 style={{
                   width:'100%', background: dark?'#161616':'#ffffff',
                   border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`,
-                  borderRadius:16, padding:'12px 14px',
-                  display:'flex', alignItems:'center', gap:12,
+                  borderRadius:16, padding:'11px 12px',
+                  display:'flex', alignItems:'center', gap:10,
                   textAlign:'left', cursor:'pointer', boxShadow: dark?'none':'0 1px 4px rgba(0,0,0,0.04)'
                 }}>
                 <div style={{
@@ -4297,7 +4298,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         <div style={{padding:'12px 16px 12px', borderBottom:`1px solid ${dark?'#161616':'#f3f4f6'}`, flexShrink:0}}>
           <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:8}}>
             <button onClick={()=>setScreen("levels")} style={{padding:6, borderRadius:10, background: dark?'#161616':'#f3f4f6', border:'none', cursor:'pointer', color: dark?'#d1d5db':'#6b7280'}}><X size={16}/></button>
-            <div style={{flex:1, height:8, background: dark?'#161616':'#f3f4f6', borderRadius:99, overflow:'hidden'}}>
+            <div style={{flex:1, height:10, background: dark?'#161616':'#f3f4f6', borderRadius:99, overflow:'hidden'}}>
               <div className="progress-bar" style={{height:'100%', borderRadius:99, background:'linear-gradient(90deg,#3b82f6,#6366f1)', width:`${pct}%`}}/>
             </div>
             <div style={{display:'flex', gap:3}}>
@@ -4376,7 +4377,6 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
               <div style={{background:dark?'#161616':'#f8faff',border:`1px solid ${dark?'#2a2a2a':'#dbeafe'}`,borderLeft:'4px solid #3b82f6',borderRadius:'0 14px 14px 0',padding:'14px 16px',fontSize:14,color:dark?'#d1d5db':'#374151',lineHeight:1.75,marginBottom:20}}>
                 {step.content}
               </div>
-              <button onClick={nextStep} style={{width:'100%',background:'linear-gradient(135deg,#3b82f6,#6366f1)',color:'white',borderRadius:14,padding:'14px',fontSize:15,fontWeight:600,border:'none',cursor:'pointer',boxShadow:'0 6px 20px rgba(99,102,241,0.3)'}}>{(L_LESSON[lang]||L_LESSON.fr).understood}</button>
             </div>
           )}
 
@@ -4417,7 +4417,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
               </div>
 
               {/* Question */}
-              <div style={{fontSize:15, fontWeight:600, lineHeight:1.6, marginBottom:16, color: dark?'#f9fafb':'#111827'}}>
+              <div style={{fontSize:17, fontWeight:600, lineHeight:1.65, marginBottom:18, color: dark?'#f9fafb':'#111827'}}>
                 {step.q}
               </div>
 
@@ -4448,16 +4448,16 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                     <button key={i} onClick={()=>handleAnswer(i)} disabled={answered}
                       className={!answered?"card-hover":""}
                       style={{
-                        width:'100%', textAlign:'left', padding:'12px 14px',
-                        border:`1.5px solid ${border}`, borderRadius:14,
-                        fontSize:13, display:'flex', alignItems:'center', gap:10,
+                        width:'100%', textAlign:'left', padding:'15px 16px',
+                        border:`2px solid ${border}`, borderRadius:16,
+                        fontSize:14, display:'flex', alignItems:'center', gap:12,
                         background: bg, color: textColor, cursor: answered?'default':'pointer',
                         transition:'all 0.2s'
                       }}>
                       <span style={{
-                        width:26, height:26, borderRadius:'50%', flexShrink:0,
+                        width:30, height:30, borderRadius:'50%', flexShrink:0,
                         display:'flex', alignItems:'center', justifyContent:'center',
-                        fontSize:11, fontWeight:700,
+                        fontSize:12, fontWeight:700,
                         background: letterBg, color: letterColor,
                         transition:'all 0.2s'
                       }}>{letters[i]}</span>
@@ -4471,29 +4471,36 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
               {answered && (
                 <div className="slide-up">
                   <div style={{
-                    borderRadius:14, padding:'12px 14px', marginBottom:12, fontSize:13, lineHeight:1.6,
+                    borderRadius:14, padding:'14px 16px', marginBottom:0, fontSize:13, lineHeight:1.6,
                     ...(selectedAns===step.correct
                       ? {background: dark?'#064e3b':'#f0fdf4', border:`1.5px solid ${dark?'#059669':'#6ee7b7'}`, color: dark?'#a7f3d0':'#065f46'}
                       : {background: dark?'#450a0a':'#fff1f2', border:`1.5px solid ${dark?'#b91c1c':'#fca5a5'}`, color: dark?'#fca5a5':'#9f1239'})
                   }}>
-                    <div style={{fontWeight:700, fontSize:14, marginBottom:5}}>
-                      {selectedAns===step.correct?(L_LESSON[lang]||L_LESSON.fr).correct:(L_LESSON[lang]||L_LESSON.fr).wrong}
+                    <div style={{fontWeight:700, fontSize:15, marginBottom:6, display:'flex', alignItems:'center', gap:6}}>
+                      <span style={{fontSize:18}}>{selectedAns===step.correct?'✅':'❌'}</span>
+                      <span>{selectedAns===step.correct?(L_LESSON[lang]||L_LESSON.fr).correct:(L_LESSON[lang]||L_LESSON.fr).wrong}</span>
                     </div>
                     {step.explanation}
                   </div>
-                  <button onClick={nextStep} style={{
-                    width:'100%', borderRadius:14, padding:'14px', fontSize:15,
-                    fontWeight:600, border:'none', cursor:'pointer', color:'white',
-                    background: lives===0?'linear-gradient(135deg,#ef4444,#b91c1c)':'linear-gradient(135deg,#3b82f6,#6366f1)',
-                    boxShadow: lives===0?'0 6px 20px rgba(239,68,68,0.3)':'0 6px 20px rgba(99,102,241,0.3)'
-                  }}>
-                    {lives===0?(L_LESSON[lang]||L_LESSON.fr).seeResult:stepIdx+1>=steps.length?(L_LESSON[lang]||L_LESSON.fr).finish:(L_LESSON[lang]||L_LESSON.fr).cont}
-                  </button>
                 </div>
               )}
             </div>
           )}
         </div>
+        {/* ── Sticky action bar ─── */}
+        {!loading && !error && step && (
+          step.type === 'theory' ? (
+            <div style={{padding:'12px 16px 20px', background:dark?'#09090b':'white', borderTop:'1px solid '+(dark?'#1c1c1f':'#f0f4f8'), flexShrink:0}}>
+              <button onClick={nextStep} style={{width:'100%',background:'linear-gradient(135deg,#3b82f6,#6366f1)',color:'white',borderRadius:16,padding:'15px',fontSize:16,fontWeight:700,border:'none',cursor:'pointer',boxShadow:'0 6px 20px rgba(99,102,241,0.3)'}}>{(L_LESSON[lang]||L_LESSON.fr).understood}</button>
+            </div>
+          ) : answered ? (
+            <div style={{padding:'12px 16px 20px', background:dark?'#09090b':'white', borderTop:'1px solid '+(dark?'#1c1c1f':'#f0f4f8'), flexShrink:0}}>
+              <button onClick={nextStep} style={{width:'100%', borderRadius:16, padding:'15px', fontSize:16, fontWeight:700, border:'none', cursor:'pointer', color:'white', background: lives===0?'linear-gradient(135deg,#ef4444,#b91c1c)':'linear-gradient(135deg,#3b82f6,#6366f1)', boxShadow: lives===0?'0 6px 20px rgba(239,68,68,0.3)':'0 6px 20px rgba(99,102,241,0.3)'}}>
+                {lives===0?(L_LESSON[lang]||L_LESSON.fr).seeResult:stepIdx+1>=steps.length?(L_LESSON[lang]||L_LESSON.fr).finish:(L_LESSON[lang]||L_LESSON.fr).cont}
+              </button>
+            </div>
+          ) : null
+        )}
       </PhoneFrame>
     );
   }
@@ -4722,7 +4729,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             {/* Question */}
             <div className="slide-up" style={{background:dark?'#1a1a1e':'#f8fafc', borderRadius:16, padding:'18px 16px', marginBottom:18, border:`1.5px solid ${dark?'#27272a':'#e2e8f0'}`}}>
               <div style={{fontSize:11, fontWeight:700, color:catColor, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8}}>{cats.find(c=>c.id===exCat)?.label}</div>
-              <div style={{fontSize:15, fontWeight:600, color:dark?'#f4f4f5':'#0f172a', lineHeight:1.55}}>{q.q}</div>
+              <div style={{fontSize:16, fontWeight:600, color:dark?'#f4f4f5':'#0f172a', lineHeight:1.6}}>{q.q}</div>
             </div>
             {/* Options */}
             <div style={{display:'flex', flexDirection:'column', gap:10}}>
@@ -4736,7 +4743,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                 }
                 return (
                   <button key={i} onClick={()=>handleExAnswer(i)} disabled={exAns !== null} style={{
-                    textAlign:'left', padding:'14px 15px', borderRadius:14,
+                    textAlign:'left', padding:'15px 16px', borderRadius:16,
                     background:bg, border:`1.5px solid ${border}`, color, fontSize:13, fontWeight:500,
                     cursor:exAns!==null?'default':'pointer', lineHeight:1.45,
                     display:'flex', alignItems:'center', gap:11,
@@ -4745,7 +4752,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                     transform: exAns===null ? 'none' : undefined,
                   }}>
                     <span style={{
-                      width:26, height:26, borderRadius:9, flexShrink:0,
+                      width:29, height:29, borderRadius:10, flexShrink:0,
                       background: exAns!==null&&isCorrect?'#059669' : exAns!==null&&isSelected&&!isCorrect?'#ef4444' : dark?'#27272a':'#f1f5f9',
                       display:'flex', alignItems:'center', justifyContent:'center',
                       fontSize:12, fontWeight:800,
@@ -4764,15 +4771,17 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
               <div className="fade-in" style={{marginTop:16, background:dark?'rgba(99,102,241,0.08)':'#eef2ff', borderRadius:12, padding:'13px 15px', border:`1px solid ${dark?'rgba(99,102,241,0.2)':'#c7d2fe'}`}}>
                 <div style={{fontSize:12, fontWeight:700, color:'#6366f1', marginBottom:4}}>💡 Explication</div>
                 <div style={{fontSize:13, color:dark?'#c7d2fe':'#4338ca', lineHeight:1.5}}>{q.exp}</div>
-                <button onClick={nextExQ} style={{
-                  marginTop:12, width:'100%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
-                  color:'white', borderRadius:10, padding:'11px', fontSize:14, fontWeight:600, border:'none', cursor:'pointer'
-                }}>
-                  {exQIdx+1 < activeEx.questions.length ? 'Question suivante →' : 'Voir les résultats →'}
-                </button>
               </div>
             )}
           </div>
+          {/* ── Sticky next btn exercises ── */}
+          {exAns !== null && (
+            <div style={{padding:'12px 16px 20px', background:dark?'#09090b':'white', borderTop:'1px solid '+(dark?'#1c1c1f':'#f0f4f8'), flexShrink:0}}>
+              <button onClick={nextExQ} style={{width:'100%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'white', borderRadius:16, padding:'15px', fontSize:16, fontWeight:700, border:'none', cursor:'pointer', boxShadow:'0 6px 20px rgba(99,102,241,0.25)'}}>
+                {exQIdx+1 < activeEx.questions.length ? 'Question suivante →' : 'Voir les résultats →'}
+              </button>
+            </div>
+          )}
         </PhoneFrame>
       );
     }
