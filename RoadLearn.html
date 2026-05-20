@@ -2342,6 +2342,7 @@ function RoadLearn() {
   const [notifSettings, setNotifSettings] = useState({ global:false, lesson:true, streak:true, lb:false, time:'19:00' });
   const notifSupported = typeof Notification !== 'undefined';
   const [notifPerm, setNotifPerm] = useState(notifSupported ? Notification.permission : 'unsupported');
+  const [notifTestFeedback, setNotifTestFeedback] = useState(''); // '' | 'ok' | 'fail'
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const [showTheory, setShowTheory] = useState(false);
   const [translating, setTranslating] = useState(false);
@@ -2484,25 +2485,42 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     }
   }
 
-  // ── Envoi effectif d'une notification (SW d'abord, fallback new Notification) ──
+  // ── Envoi effectif d'une notification ────────────────────────────────────────
+  // new Notification() en premier (synchrone, conserve le geste utilisateur).
+  // Si le navigateur le bloque, on tente ServiceWorker.showNotification() avec timeout.
   async function sendNotif(title, body, tag) {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (!notifSupported || Notification.permission !== 'granted') return false;
+    // Tentative 1 : new Notification() — le plus direct
     try {
-      if ('serviceWorker' in navigator) {
-        const reg = await navigator.serviceWorker.ready;
+      new Notification(title, { body, tag: tag || 'rl', icon: './icon.svg', silent: false });
+      return true;
+    } catch(e1) {}
+    // Tentative 2 : ServiceWorker.showNotification() avec timeout 4 s
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((_, rej) => setTimeout(() => rej('SW timeout'), 4000)),
+        ]);
         await reg.showNotification(title, {
           body, tag: tag || 'rl',
           icon: './icon.svg',
-          badge: './icon.svg',
           requireInteraction: false,
         });
-      } else {
-        new Notification(title, { body, icon: './icon.svg', tag: tag || 'rl' });
-      }
-    } catch(e) {
-      try { new Notification(title, { body, icon: './icon.svg', tag: tag || 'rl' }); } catch(_) {}
+        return true;
+      } catch(e2) {}
     }
+    return false;
   }
+
+  // Sync notifPerm avec la vraie valeur du navigateur (ex: si l'utilisateur change
+  // manuellement les permissions pendant que la page est ouverte)
+  useEffect(() => {
+    if (!notifSupported) return;
+    const sync = () => setNotifPerm(Notification.permission);
+    document.addEventListener('visibilitychange', sync);
+    return () => document.removeEventListener('visibilitychange', sync);
+  }, []);
 
   // ── Planification du rappel quotidien ────────────────────────────────────────
   useEffect(() => {
@@ -3590,13 +3608,20 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
           {/* Bouton Tester — vérifie que les notifs fonctionnent */}
           {notifPerm==='granted'&&notifSettings.global&&(
             <div style={{padding:'12px 16px',borderTop:`1px solid ${dark?'#27272a':'#eef0f5'}`}}>
-              <button onClick={()=>{
+              <button onClick={async ()=>{
                 const ln = L_NOTIF[lang]||L_NOTIF.fr;
-                sendNotif(ln.testTitle, ln.testBody, 'rl-test');
+                const ok = await sendNotif(ln.testTitle, ln.testBody, 'rl-test');
+                setNotifTestFeedback(ok ? 'ok' : 'fail');
+                setTimeout(() => setNotifTestFeedback(''), 4000);
               }} style={{width:'100%',padding:'9px 14px',borderRadius:10,fontSize:13,fontWeight:600,cursor:'pointer',
-                background:dark?'#1c1c1f':'#f3f4f6',color:dark?'#a1a1aa':'#374151',
-                border:`1.5px solid ${dark?'#2d2d30':'#e5e7eb'}`,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
-                🔔 {lang==='fr'?'Envoyer une notification test':lang==='de'?'Test-Benachrichtigung senden':lang==='es'?'Enviar notificación de prueba':lang==='pt'?'Enviar notificação de teste':lang==='it'?'Invia notifica di prova':lang==='nl'?'Testmelding verzenden':lang==='ja'?'テスト通知を送信':'Send test notification'}
+                background:notifTestFeedback==='ok'?'#059669':notifTestFeedback==='fail'?'#dc2626':(dark?'#1c1c1f':'#f3f4f6'),
+                color:notifTestFeedback?'white':(dark?'#a1a1aa':'#374151'),
+                border:`1.5px solid ${notifTestFeedback==='ok'?'#059669':notifTestFeedback==='fail'?'#dc2626':(dark?'#2d2d30':'#e5e7eb')}`,
+                display:'flex',alignItems:'center',justifyContent:'center',gap:6,
+                transition:'all 0.2s'}}>
+                {notifTestFeedback==='ok'?'✅ '+(lang==='fr'?'Notification envoyée !':lang==='de'?'Benachrichtigung gesendet!':lang==='es'?'¡Notificación enviada!':lang==='pt'?'Notificação enviada!':lang==='it'?'Notifica inviata!':lang==='nl'?'Melding verzonden!':lang==='ja'?'通知を送信しました！':'Notification sent!')
+                :notifTestFeedback==='fail'?'❌ '+(lang==='fr'?'Échec — vérifier les permissions':'Failed — check permissions')
+                :'🔔 '+(lang==='fr'?'Envoyer une notification test':lang==='de'?'Test-Benachrichtigung senden':lang==='es'?'Enviar notificación de prueba':lang==='pt'?'Enviar notificação de teste':lang==='it'?'Invia notifica di prova':lang==='nl'?'Testmelding verzenden':lang==='ja'?'テスト通知を送信':'Send test notification')}
               </button>
             </div>
           )}
