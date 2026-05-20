@@ -2400,6 +2400,186 @@ const EXERCISES = {
           ans:0, exp:"useMemo mémoïse une valeur calculée. useCallback mémoïse une fonction. React.memo mémoïse un composant. Ces optimisations ne sont utiles que si le calcul est vraiment coûteux." }
       ]
     }
+  ],
+  // ── Type 2 : Complétion de code ──────────────────────────────────────────
+  completion: [
+    { id:"cpl1", icon:"📝", title:"Requêtes Prisma", xp:30, difficulty:2,
+      desc:"Complétez les méthodes Prisma manquantes",
+      questions:[
+        { q:"Complétez : `const users = await prisma.user.___({})`\npour récupérer tous les utilisateurs",
+          opts:["findMany","findAll","getAll","selectAll"],
+          ans:0, exp:"findMany() récupère tous les enregistrements. Il accepte des options where, orderBy, skip, take pour filtrer/paginer." },
+        { q:"Complétez : `const user = await prisma.user.___({\n  data: { name: 'Alex', email: 'alex@ex.com' }\n})`",
+          opts:["create","insert","add","new"],
+          ans:0, exp:"create() insère un nouvel enregistrement. La data doit être dans { data: {...} }. Équivalent SQL : INSERT INTO users (name, email) VALUES (...)." },
+        { q:"Complétez : `await prisma.user.___({\n  where: { id: 5 },\n  data: { name: 'Bob' }\n})`",
+          opts:["update","patch","modify","set"],
+          ans:0, exp:"update() met à jour un enregistrement existant. Si l'enregistrement n'existe pas, il lève une erreur. Utiliser upsert() pour créer ou mettre à jour." }
+      ]
+    },
+    { id:"cpl2", icon:"🛣️", title:"Handler Express", xp:25, difficulty:1,
+      desc:"Complétez les handlers Express.js",
+      questions:[
+        { q:"Complétez : `app.___ ('/users/:id', async (req, res) => { ... })`\npour lire une ressource",
+          opts:["get","fetch","read","query"],
+          ans:0, exp:"app.get() définit une route GET. Les autres méthodes sont app.post(), app.put(), app.patch(), app.delete()." },
+        { q:"Complétez : `res.___(201).json({ message: 'Created', user })`\npour renvoyer le bon status",
+          opts:["status","code","setStatus","statusCode"],
+          ans:0, exp:"res.status(201) définit le code HTTP de la réponse. Le chaînage .json() envoie le body en JSON. Sans .status(), la réponse envoie 200 par défaut." },
+        { q:"Complétez : `const { id } = req.___`\npour extraire l'id d'une URL `/users/:id`",
+          opts:["params","args","path","url"],
+          ans:0, exp:"req.params contient les paramètres d'URL dynamiques (:id, :slug...). req.query contient les query strings (?page=2), req.body le body JSON." }
+      ]
+    },
+    { id:"cpl3", icon:"🗃️", title:"Schéma Prisma", xp:35, difficulty:2,
+      desc:"Complétez les définitions de modèles Prisma",
+      questions:[
+        { q:"Complétez le modèle :\n`model User {\n  id Int @id @default(___())\n}`",
+          opts:["autoincrement","auto","increment","nextval"],
+          ans:0, exp:"@default(autoincrement()) génère un ID auto-incrémenté. Pour PostgreSQL avec UUID : @default(uuid()). Pour CUID : @default(cuid())." },
+        { q:"Complétez la relation :\n`model Post {\n  author   User @___(fields: [authorId], references: [id])\n  authorId Int\n}`",
+          opts:["relation","join","link","foreignKey"],
+          ans:0, exp:"@relation() définit une relation entre modèles Prisma. fields: spécifie la clé étrangère locale, references: la clé primaire du modèle cible." },
+        { q:"Pour rendre un champ optionnel en Prisma, on ajoute ___",
+          opts:["? après le type (ex: String?)","optional: true","@nullable","@optional"],
+          ans:0, exp:"En Prisma, un ? après le type (String?, Int?) rend le champ nullable/optionnel. Sans ?, le champ est obligatoire." }
+      ]
+    }
+  ],
+  // ── Type 5 : Compréhension de flux ──────────────────────────────────────────
+  flux: [
+    { id:"flx1", icon:"💸", title:"Flux Stripe complet", xp:30, difficulty:2,
+      desc:"Comprenez chaque étape du flux de paiement",
+      questions:[
+        { q:"Après que votre serveur crée un PaymentIntent Stripe, que reçoit le client ?",
+          opts:["Un client_secret pour confirmer le paiement","Un token JWT d'authentification","L'URL de redirection vers Stripe","Une confirmation de paiement"],
+          ans:0, exp:"Le client_secret est une clé côté client qui permet de confirmer le PaymentIntent sans exposer votre clé secrète API. Stripe.js l'utilise pour stripe.confirmCardPayment()." },
+        { q:"Après confirmation du paiement côté client, quelle est l'étape suivante du côté Stripe ?",
+          opts:["Stripe envoie un webhook payment_intent.succeeded à votre serveur","Stripe envoie directement l'argent","Le client est redirigé automatiquement","Stripe envoie un email de confirmation"],
+          ans:0, exp:"Le webhook est la façon dont Stripe notifie votre serveur de façon fiable. Ne jamais mettre à jour la DB uniquement sur la réponse client — utiliser le webhook comme source de vérité." },
+        { q:"Pourquoi faut-il vérifier la signature du webhook Stripe avec constructEvent() ?",
+          opts:["Pour s'assurer que la requête vient bien de Stripe et non d'un attaquant","Pour décrypter le payload JSON","Pour générer un token d'accès","Pour enregistrer l'event dans la DB"],
+          ans:0, exp:"Sans vérification, n'importe qui pourrait envoyer de fausses notifications webhook à votre serveur (ex: simuler un paiement réussi). La signature utilise votre webhook secret key." }
+      ]
+    },
+    { id:"flx2", icon:"🌐", title:"Cycle requête HTTP", xp:20, difficulty:1,
+      desc:"Suivez le cycle complet d'une requête REST",
+      questions:[
+        { q:"Dans un cycle requête/réponse HTTP, que se passe-t-il en premier ?",
+          opts:["Le client envoie une requête avec méthode, URL et headers","Le serveur envoie une réponse","Le DNS résout le nom de domaine","Le client envoie le body JSON"],
+          ans:0, exp:"Le cycle HTTP : 1) DNS résolution → 2) TCP connexion → 3) Client envoie requête (méthode + URL + headers + body optionnel) → 4) Serveur traite → 5) Serveur répond (status + headers + body)." },
+        { q:"Que fait le navigateur lors d'une requête CORS cross-origin avant d'envoyer la vraie requête ?",
+          opts:["Envoie une requête OPTIONS (preflight) pour vérifier les permissions","Envoie directement la vraie requête","Bloque la requête automatiquement","Demande une confirmation à l'utilisateur"],
+          ans:0, exp:"Le preflight OPTIONS est envoyé automatiquement par le navigateur pour les requêtes cross-origin non-simples. Le serveur répond avec Access-Control-Allow-* pour autoriser ou non." },
+        { q:"Qu'est-ce que le Keep-Alive HTTP permet ?",
+          opts:["Réutiliser la même connexion TCP pour plusieurs requêtes","Garder la session utilisateur active","Maintenir un WebSocket ouvert","Cacher les réponses côté client"],
+          ans:0, exp:"Keep-Alive (HTTP/1.1 persistent connection) évite d'ouvrir une nouvelle connexion TCP pour chaque requête, réduisant la latence. HTTP/2 va plus loin avec le multiplexage." }
+      ]
+    },
+    { id:"flx3", icon:"🚀", title:"Déploiement Vercel", xp:25, difficulty:2,
+      desc:"Comprenez le pipeline de déploiement Vercel",
+      questions:[
+        { q:"Quand vous faites `git push` sur main, qu'est-ce que Vercel déclenche automatiquement ?",
+          opts:["Un build puis déploiement si le build réussit","Un email de confirmation","Une sauvegarde de la version précédente","Un test des endpoints API"],
+          ans:0, exp:"Vercel détecte le push via GitHub webhook, lance le build (npm run build), et si le build passe, déploie automatiquement. Chaque PR génère aussi un preview deployment." },
+        { q:"Comment les variables d'environnement de production sont-elles gérées sur Vercel ?",
+          opts:["Configurées dans le dashboard Vercel (jamais dans le code ou .env committé)","Dans le fichier .env committé sur GitHub","Dans le fichier vercel.json","Automatiquement détectées depuis package.json"],
+          ans:0, exp:"Les variables d'environnement de production ne doivent JAMAIS être committées. Sur Vercel, on les configure dans Settings > Environment Variables. Le .env local est pour le développement uniquement." },
+        { q:"Qu'est-ce qu'un Edge Function sur Vercel par rapport à une Serverless Function classique ?",
+          opts:["S'exécute sur le réseau CDN mondial avec latence ultra-faible, mais avec des limitations (pas de Node.js complet)","Est plus rapide uniquement pour les images","Ne supporte pas JavaScript","Nécessite un serveur dédié"],
+          ans:0, exp:"Les Edge Functions tournent sur le réseau Vercel Edge (proche de l'utilisateur) avec V8 isolates. Très faible cold start mais limitées : pas de fs, certains modules Node.js non disponibles." }
+      ]
+    }
+  ],
+  // ── Type 8 : Configuration ──────────────────────────────────────────────────
+  config: [
+    { id:"cfg1", icon:"🔑", title:"Variables d'environnement", xp:20, difficulty:1,
+      desc:"Maîtrisez la configuration des variables d'env",
+      questions:[
+        { q:"Quelle est la convention de nommage correcte pour une variable d'environnement ?",
+          opts:["SCREAMING_SNAKE_CASE (ex: DATABASE_URL)","camelCase (ex: databaseUrl)","PascalCase (ex: DatabaseUrl)","kebab-case (ex: database-url)"],
+          ans:0, exp:"Les variables d'environnement utilisent SCREAMING_SNAKE_CASE par convention Unix. C'est la norme dans tous les frameworks (Node.js, Docker, CI/CD)." },
+        { q:"Dans un projet Node.js, comment charger les variables d'un fichier .env ?",
+          opts:["require('dotenv').config() au tout début du fichier principal","import .env","process.env.load('.env')","node --env .env app.js"],
+          ans:0, exp:"dotenv est la librairie standard. Elle doit être chargée AVANT toute utilisation de process.env, donc en première ligne de app.js ou server.js." },
+        { q:"Quelle valeur typique pour DATABASE_URL avec PostgreSQL en local ?",
+          opts:["postgresql://user:password@localhost:5432/dbname","localhost/dbname","postgres://dbname:5432","http://localhost:5432/dbname"],
+          ans:0, exp:"Le format Connection String PostgreSQL : postgresql://[user]:[password]@[host]:[port]/[dbname]. Prisma et la plupart des ORMs acceptent ce format directement." }
+      ]
+    },
+    { id:"cfg2", icon:"🗄️", title:"Configuration Prisma", xp:30, difficulty:2,
+      desc:"Configurez correctement Prisma ORM",
+      questions:[
+        { q:"Dans le fichier datasource de Prisma, comment pointer vers la DB via une variable d'env ?",
+          opts:['url = env("DATABASE_URL")','url = process.env.DATABASE_URL','url = $DATABASE_URL','url = "${DATABASE_URL}"'],
+          ans:0, exp:'Prisma utilise la syntaxe env("VAR_NAME") pour lire les variables d\'environnement. C\'est la seule façon supportée dans schema.prisma.' },
+        { q:"Après avoir modifié le schema.prisma, quelle commande appliquer les changements à la DB ?",
+          opts:["npx prisma migrate dev","npx prisma push","npx prisma sync","npx prisma apply"],
+          ans:0, exp:"prisma migrate dev crée une migration SQL et l'applique. prisma db push applique directement sans créer de fichier de migration (utile en développement rapide, dangereux en production)." },
+        { q:"Quelle commande pour régénérer le Prisma Client après modification du schema ?",
+          opts:["npx prisma generate","npx prisma build","npx prisma compile","npx prisma update"],
+          ans:0, exp:"prisma generate lit le schema.prisma et génère le client TypeScript/JavaScript dans node_modules/@prisma/client. À relancer après chaque modification du schema." }
+      ]
+    },
+    { id:"cfg3", icon:"🪝", title:"Webhook Stripe", xp:35, difficulty:3,
+      desc:"Configurez et sécurisez les webhooks Stripe",
+      questions:[
+        { q:"Comment vérifier qu'un webhook Stripe est authentique dans Node.js ?",
+          opts:["stripe.webhooks.constructEvent(body, sig, webhookSecret)","Vérifier l'IP source de la requête","Vérifier le header Authorization","Aucune vérification n'est nécessaire avec HTTPS"],
+          ans:0, exp:"constructEvent() vérifie la signature HMAC-SHA256 du payload. Sans cette vérification, n'importe qui peut envoyer de fausses notifications webhook à votre endpoint." },
+        { q:"Dans quel header HTTP Stripe envoie-t-il la signature du webhook ?",
+          opts:["Stripe-Signature","Authorization","X-Stripe-Signature","Stripe-Auth"],
+          ans:0, exp:"Stripe ajoute le header 'Stripe-Signature' avec un timestamp et plusieurs signatures (pour permettre la rotation de clés). Express.js nécessite express.raw() (pas express.json()) pour accéder au body brut." },
+        { q:"Pourquoi utiliser express.raw() et non express.json() pour l'endpoint webhook Stripe ?",
+          opts:["La vérification de signature nécessite le body brut (Buffer), pas le JSON parsé","express.json() est plus lent","Stripe envoie XML, pas JSON","Pour éviter les timeouts"],
+          ans:0, exp:"La signature HMAC est calculée sur le payload brut (octets). Si Express parse le JSON et le re-stringify, les octets peuvent changer (espaces, ordre des clés) et la signature sera invalide." }
+      ]
+    }
+  ],
+  // ── Type 12 : Logique d'API ──────────────────────────────────────────────────
+  api: [
+    { id:"api1", icon:"📡", title:"Requêtes HTTP correctes", xp:25, difficulty:1,
+      desc:"Choisissez la bonne requête pour chaque action",
+      questions:[
+        { q:"Un client veut créer un utilisateur. Quelle requête HTTP est correcte ?",
+          opts:["POST /api/users avec { name, email } dans le body","GET /api/users?name=Alex&email=...","PUT /api/users avec { name, email }","GET /api/users/create?name=Alex"],
+          ans:0, exp:"POST /api/users avec le body JSON est le standard REST pour créer une ressource. GET ne devrait jamais avoir de side effects ni de body. PUT est réservé au remplacement d'une ressource existante." },
+        { q:"Un client veut mettre à jour uniquement l'email de l'utilisateur 42. Quelle requête ?",
+          opts:["PATCH /api/users/42 avec { email: 'new@ex.com' }","PUT /api/users/42 avec tous les champs de l'utilisateur","POST /api/users/42/update-email","GET /api/users/42?newEmail=new@ex.com"],
+          ans:0, exp:"PATCH est pour les mises à jour partielles (seulement les champs envoyés). PUT remplace entièrement la ressource — tous les champs doivent être envoyés, les champs manquants sont effacés ou mis à null." },
+        { q:"Quelle est la réponse HTTP correcte pour une ressource supprimée avec succès (sans contenu à retourner) ?",
+          opts:["204 No Content","200 OK avec { success: true }","200 OK avec la ressource supprimée","201 Created"],
+          ans:0, exp:"204 No Content indique que l'action a réussi mais qu'il n'y a pas de contenu à retourner. C'est le code standard pour les suppressions réussies en REST." }
+      ]
+    },
+    { id:"api2", icon:"📋", title:"Headers HTTP", xp:20, difficulty:1,
+      desc:"Utilisez les bons headers pour chaque cas",
+      questions:[
+        { q:"Quel header envoyer pour indiquer que le body de votre requête est en JSON ?",
+          opts:["Content-Type: application/json","Accept: application/json","Data-Type: json","Format: json"],
+          ans:0, exp:"Content-Type indique le format du body envoyé. Accept indique le format attendu dans la réponse. Beaucoup d'APIs JSON ignorent le Content-Type mais certains middlewares Express le vérifient." },
+        { q:"Quel header utiliser pour envoyer un token JWT dans une requête API ?",
+          opts:["Authorization: Bearer {token}","Auth-Token: {token}","JWT: {token}","X-API-Key: {token}"],
+          ans:0, exp:"Le standard HTTP est Authorization: Bearer {token}. X-API-Key est parfois utilisé pour les clés API. Basic {base64} est pour l'auth username:password." },
+        { q:"Quel header le serveur doit inclure pour permettre les requêtes AJAX depuis localhost:3000 ?",
+          opts:["Access-Control-Allow-Origin: http://localhost:3000","CORS: http://localhost:3000","Allow-Origin: http://localhost:3000","X-CORS: *"],
+          ans:0, exp:"Access-Control-Allow-Origin est le header CORS standard. On peut mettre * pour tout autoriser (déconseillé en prod avec credentials) ou une origine spécifique. Le header doit venir du serveur, pas du client." }
+      ]
+    },
+    { id:"api3", icon:"📬", title:"Codes de réponse serveur", xp:30, difficulty:2,
+      desc:"Renvoyez le bon status HTTP dans chaque situation",
+      questions:[
+        { q:"Votre endpoint GET /users/99 — l'utilisateur 99 n'existe pas. Quel status retourner ?",
+          opts:["404 Not Found","400 Bad Request","204 No Content","500 Internal Server Error"],
+          ans:0, exp:"404 = la ressource demandée n'existe pas. 400 = la requête est malformée (body invalide, champ manquant). Ne pas retourner 200 avec un body vide — c'est trompeur pour le client." },
+        { q:"Votre serveur reçoit un body JSON invalide (malformé). Quel status retourner ?",
+          opts:["400 Bad Request","422 Unprocessable Entity","500 Internal Server Error","415 Unsupported Media Type"],
+          ans:0, exp:"400 est pour les requêtes malformées (JSON invalide, champs manquants obligatoires). 422 est pour les requêtes bien formées mais avec des données sémantiquement incorrectes (email invalide par ex)." },
+        { q:"L'utilisateur tente d'accéder à /admin/dashboard sans être admin. Quel status ?",
+          opts:["403 Forbidden","401 Unauthorized","404 Not Found","400 Bad Request"],
+          ans:0, exp:"403 = authentifié mais non autorisé (mauvais rôle/permission). 401 = non authentifié (pas de token ou token invalide). Utiliser 404 pour masquer l'existence d'une ressource sensible est une pratique de sécurité valide." }
+      ]
+    }
   ]
 };
 
@@ -4381,9 +4561,13 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
   // ── Exercices ─────────────────────────────────────────────────────────────
   if (screen === "exercises") {
     const cats = [
-      { id:"ordering", label:"🔢 Ordre",     color:"#6366f1" },
-      { id:"errors",   label:"🐛 Débogage",  color:"#ef4444" },
-      { id:"mapping",  label:"🗺️ Association",color:"#0ea5e9" },
+      { id:"ordering",   label:"🔢 Ordre",       color:"#6366f1" },
+      { id:"errors",     label:"🐛 Débogage",    color:"#ef4444" },
+      { id:"mapping",    label:"🗺️ Association", color:"#0ea5e9" },
+      { id:"completion", label:"📝 Complétion",  color:"#f59e0b" },
+      { id:"flux",       label:"🔍 Flux",        color:"#10b981" },
+      { id:"config",     label:"⚙️ Config",      color:"#8b5cf6" },
+      { id:"api",        label:"📡 API",         color:"#ec4899" },
     ];
     const exList = EXERCISES[exCat] || [];
 
@@ -4548,15 +4732,15 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
           </button>
         </div>
         <div style={{flex:1, overflowY:'auto', padding:'16px 16px 8px'}}>
-          {/* Category tabs */}
-          <div style={{display:'flex', gap:8, marginBottom:20}}>
+          {/* Category tabs — scrollable */}
+          <div style={{display:'flex', gap:8, marginBottom:20, overflowX:'auto', paddingBottom:4, WebkitOverflowScrolling:'touch', scrollbarWidth:'none', msOverflowStyle:'none'}}>
             {cats.map(c => (
               <button key={c.id} onClick={()=>setExCat(c.id)} style={{
-                flex:1, padding:'8px 4px', borderRadius:10, fontSize:11, fontWeight:600,
+                flexShrink:0, padding:'7px 12px', borderRadius:10, fontSize:11, fontWeight:600,
                 border:`1.5px solid ${exCat===c.id?c.color:dark?'#27272a':'#e2e8f0'}`,
                 background:exCat===c.id?(dark?`${c.color}22`:c.color+'15'):(dark?'#111113':'#f8fafc'),
                 color:exCat===c.id?c.color:(dark?'#71717a':'#94a3b8'),
-                cursor:'pointer', transition:'all 0.2s'
+                cursor:'pointer', transition:'all 0.2s', whiteSpace:'nowrap'
               }}>{c.label}</button>
             ))}
           </div>
