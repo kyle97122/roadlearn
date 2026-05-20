@@ -2769,6 +2769,7 @@ function RoadLearn() {
   const [tDailyChallenge, setTDailyChallenge] = useState(null); // daily challenge traduit
   const [tRoadmaps, setTRoadmaps] = useState(null);  // noms roadmaps/sections/niveaux traduits
   const audioRef = React.useRef(null);               // Audio cloud TTS
+  const ttsVoicesRef = React.useRef([]);             // Cache voix TTS chargées
   const translCache = React.useRef({});              // cache: translCache[lang][cacheKey] = steps
   const [profilePhoto, setProfilePhoto] = useState(null); // base64 data URL ou null
   const photoInputRef = React.useRef(null);
@@ -2960,6 +2961,26 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
+  // Sélection de la voix la plus humaine : Microsoft Neural (Edge) >
+  // Google Neural (Chrome) > Enhanced/Natural (Safari) > Online > local
+  function pickBestVoice(ttsLang) {
+    const vv = ttsVoicesRef.current.length
+      ? ttsVoicesRef.current
+      : ('speechSynthesis' in window ? window.speechSynthesis.getVoices() : []);
+    const lc   = ttsLang.split('-')[0];
+    const exact = vv.filter(v => v.lang === ttsLang);
+    const part  = vv.filter(v => v.lang !== ttsLang && v.lang.startsWith(lc));
+    const pool  = exact.length ? exact : part.length ? part : [];
+    if (!pool.length) return null;
+    return (
+      pool.find(v => !v.localService && /microsoft/i.test(v.name)) ||
+      pool.find(v => !v.localService && /google/i.test(v.name))    ||
+      pool.find(v => /enhanced|natural|premium|neural/i.test(v.name)) ||
+      pool.find(v => !v.localService) ||
+      pool[0]
+    );
+  }
+
   function speakText(text) {
     if (!text) return;
     if (ttsPlaying) { stopAudio(); return; }
@@ -2975,29 +2996,44 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
       window.speechSynthesis.cancel();
       const doSpeak = () => {
         const u = new SpeechSynthesisUtterance(remaining);
-        u.lang = ttsLang; u.rate = ttsSpeed;
-        // Sélectionner la meilleure voix disponible pour la langue
-        const vv = window.speechSynthesis.getVoices();
-        const best = vv.find(v => v.lang === ttsLang) ||
-                     vv.find(v => v.lang.startsWith(ttsLang.split('-')[0]));
-        if (best) u.voice = best;
-        u.onend = () => setTtsPlaying(false);
+        u.lang  = ttsLang;
+        u.rate  = ttsSpeed;
+        u.pitch = 1.0;
+        const voice = pickBestVoice(ttsLang);
+        if (voice) u.voice = voice;
+        u.onend  = () => setTtsPlaying(false);
         u.onerror = () => setTtsPlaying(false);
         window.speechSynthesis.speak(u);
       };
       const vv = window.speechSynthesis.getVoices();
-      if (vv.length > 0) { doSpeak(); return; }
-      // Voix pas encore chargées (iOS/Firefox) — attendre l'événement + timeout
+      if (vv.length > 0) {
+        if (!ttsVoicesRef.current.length) ttsVoicesRef.current = vv;
+        doSpeak(); return;
+      }
+      // Voix pas encore chargées — attendre voiceschanged + timeout de sécurité
       let done = false;
-      window.speechSynthesis.onvoiceschanged = () => {
+      const onLoaded = () => {
         if (done) return; done = true;
-        window.speechSynthesis.onvoiceschanged = null; doSpeak();
+        ttsVoicesRef.current = window.speechSynthesis.getVoices();
+        window.speechSynthesis.removeEventListener('voiceschanged', onLoaded);
+        doSpeak();
       };
-      setTimeout(() => { if (!done) { done = true; doSpeak(); } }, 500);
+      window.speechSynthesis.addEventListener('voiceschanged', onLoaded);
+      setTimeout(() => { if (!done) { done = true; doSpeak(); } }, 600);
     }
 
     // Sur iOS : appel synchrone direct (toujours dans le contexte du geste)
     if (isIOS) { useWebSpeech(text); return; }
+
+    // Sur desktop/Android : si voix neurale disponible, on préfère Web Speech API
+    // (Microsoft Neural sur Edge, Google Neural sur Chrome = bien plus humain
+    //  que Google Translate TTS)
+    const _bestVoice = pickBestVoice(ttsLang);
+    const _isNeural  = _bestVoice && (
+      !_bestVoice.localService ||
+      /enhanced|natural|premium|neural/i.test(_bestVoice.name)
+    );
+    if (_isNeural) { useWebSpeech(text); return; }
 
     // ── Découpe en segments ≤ 175 chars (limite Google TTS) ──────────────────
     const chunks = [];
@@ -3028,6 +3064,17 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     }
     playChunk();
   }
+  // Précharger les voix TTS dès le montage pour éviter le délai au 1er clic
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
+    const load = () => {
+      const vv = window.speechSynthesis.getVoices();
+      if (vv.length) ttsVoicesRef.current = vv;
+    };
+    load();
+    window.speechSynthesis.addEventListener('voiceschanged', load);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', load);
+  }, []);
   useEffect(() => { stopAudio(); setShowTheory(false); }, [screen]);
   useEffect(() => { setShowTheory(false); stopAudio(); }, [stepIdx]);
   // ── Auto-traduction : daily challenge ─────────────────────────────────────
