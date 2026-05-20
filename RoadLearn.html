@@ -218,6 +218,7 @@ const Share2     = ({size,className}) => <Icon size={size} className={className}
 const CalGrid    = ({size,className}) => <Icon size={size} className={className} d={["M8 2v4","M16 2v4","M3 10h18","M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"]} />;
 const Volume2    = ({size,className}) => <Icon size={size} className={className} d={["M11 5L6 9H2v6h4l5 4V5z","M15.54 8.46a5 5 0 0 1 0 7.07","M19.07 4.93a10 10 0 0 1 0 14.14"]} />;
 const Repeat     = ({size,className}) => <Icon size={size} className={className} d={["M17 1l4 4-4 4","M3 11V9a4 4 0 0 1 4-4h14","M7 23l-4-4 4-4","M21 13v2a4 4 0 0 1-4 4H3"]} />;
+const Camera     = ({size,className,color}) => <Icon size={size} className={className} stroke={color||"currentColor"} d={["M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z","M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"]} />;
 
 // ── Stockage ──────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "roadlearn_v2";
@@ -2305,6 +2306,8 @@ function RoadLearn() {
   const [tRoadmaps, setTRoadmaps] = useState(null);  // noms roadmaps/sections/niveaux traduits
   const audioRef = React.useRef(null);               // Audio cloud TTS
   const translCache = React.useRef({});              // cache: translCache[lang][cacheKey] = steps
+  const [profilePhoto, setProfilePhoto] = useState(null); // base64 data URL ou null
+  const photoInputRef = React.useRef(null);
 
   // ── Thème + langue + notifications ────────────────────────────────────────
   useEffect(() => {
@@ -2325,6 +2328,8 @@ function RoadLearn() {
       if (savedNotif) setNotifSettings(JSON.parse(savedNotif));
       const savedSpeed = localStorage.getItem('rl_tts_speed');
       if (savedSpeed) setTtsSpeed(parseFloat(savedSpeed));
+      const savedPhoto = localStorage.getItem('rl_photo');
+      if (savedPhoto) setProfilePhoto(savedPhoto);
     } catch(_) {}
   }, []);
 
@@ -2342,6 +2347,23 @@ function RoadLearn() {
 
   function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang', code); } catch(_) {} }
   function changeTtsSpeed(s) { setTtsSpeed(s); try { localStorage.setItem('rl_tts_speed', String(s)); } catch(_) {} }
+
+  function handlePhotoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const data = ev.target.result;
+      setProfilePhoto(data);
+      try { localStorage.setItem('rl_photo', data); } catch(_) {}
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+  function removePhoto() {
+    setProfilePhoto(null);
+    try { localStorage.removeItem('rl_photo'); } catch(_) {}
+  }
 
   // ── Google Translate (API gratuite, pas de clé) ───────────────────────────
   const GTRANSLATE_LANG = { fr:'fr', en:'en', es:'es', pt:'pt', de:'de', it:'it', nl:'nl', ja:'ja' };
@@ -2628,6 +2650,7 @@ function RoadLearn() {
     return fi === 0 || (state.done[rmId] || []).includes(fi - 1);
   }
   function navTo(s) {
+    if (s === 'settings') s = 'profile'; // paramètres fusionnés dans profil
     setTab(s); setScreen(s);
     if (s !== 'home') setDailyChallengeResult(null); // reset daily challenge result when navigating away
   }
@@ -2835,7 +2858,6 @@ function RoadLearn() {
         {id:"lb",      icon:Trophy,    label:t.nav.lb},
         {id:"badges",  icon:Medal,     label:t.nav.badges},
         {id:"profile", icon:User,      label:t.nav.profile},
-        {id:"settings",icon:SettingsIc,label:t.nav.settings},
       ].map(({id,icon:Ic,label}) => {
         const isActive = active===id;
         return (
@@ -2941,13 +2963,17 @@ function RoadLearn() {
           background: dark?'linear-gradient(135deg,#1e3a5f,#1e1b4b)':'linear-gradient(135deg,#eff6ff,#eef2ff)',
           border:`1px solid ${dark?'#1e3a8a':'#e0e7ff'}`}}>
           <div style={{display:'flex', alignItems:'center', gap:12}}>
-            <div style={{
-              width:48, height:48, borderRadius:'50%', flexShrink:0,
-              background:'linear-gradient(135deg,#3b82f6,#6366f1)',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              fontSize:18, fontWeight:700, color:'white',
-              boxShadow:'0 4px 12px rgba(99,102,241,0.4)'
-            }}>{avatarLetter}</div>
+            {profilePhoto ? (
+              <img src={profilePhoto} alt="" style={{width:48,height:48,borderRadius:'50%',objectFit:'cover',flexShrink:0,boxShadow:'0 4px 12px rgba(99,102,241,0.4)'}}/>
+            ) : (
+              <div style={{
+                width:48, height:48, borderRadius:'50%', flexShrink:0,
+                background:'linear-gradient(135deg,#3b82f6,#6366f1)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:18, fontWeight:700, color:'white',
+                boxShadow:'0 4px 12px rgba(99,102,241,0.4)'
+              }}>{avatarLetter}</div>
+            )}
             <div style={{flex:1}}>
               <div style={{fontSize:15, fontWeight:600, color: dark?'#f9fafb':'#111827'}}>{username}</div>
               <div style={{fontSize:12, color: dark?'#93c5fd':'#3b82f6', fontWeight:500}}>{(L_PROFILE[lang]||L_PROFILE.fr).level} {ul.n} · {(USER_RANKS[lang]||USER_RANKS.fr)[ul.n-1]}</div>
@@ -3235,13 +3261,28 @@ function RoadLearn() {
       <div style={{flex:1, overflowY:'auto'}}>
         {/* Avatar + nom */}
         <div style={{padding:'8px 16px 16px', textAlign:'center'}}>
-          <div style={{
-            width:68, height:68, borderRadius:'50%', margin:'0 auto 12px',
-            background:'linear-gradient(135deg,#3b82f6,#6366f1)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontSize:26, fontWeight:700, color:'white',
-            boxShadow:'0 8px 24px rgba(99,102,241,0.35)'
-          }}>{avatarLetter}</div>
+          <div style={{position:'relative', width:68, margin:'0 auto 12px'}}>
+            {profilePhoto ? (
+              <img src={profilePhoto} alt="" style={{width:68,height:68,borderRadius:'50%',objectFit:'cover',display:'block',boxShadow:'0 8px 24px rgba(99,102,241,0.35)'}}/>
+            ) : (
+              <div style={{
+                width:68, height:68, borderRadius:'50%',
+                background:'linear-gradient(135deg,#3b82f6,#6366f1)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:26, fontWeight:700, color:'white',
+                boxShadow:'0 8px 24px rgba(99,102,241,0.35)'
+              }}>{avatarLetter}</div>
+            )}
+            <button onClick={()=>photoInputRef.current&&photoInputRef.current.click()} style={{position:'absolute',bottom:0,right:0,width:22,height:22,borderRadius:'50%',background:'#3b82f6',border:'2px solid '+(dark?'#0f0f0f':'white'),display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
+              <Camera size={11} color="white"/>
+            </button>
+            {profilePhoto && (
+              <button onClick={removePhoto} style={{position:'absolute',top:0,right:0,width:18,height:18,borderRadius:'50%',background:'#ef4444',border:'2px solid '+(dark?'#0f0f0f':'white'),display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
+                <X size={9} className="" style={{color:'white'}}/>
+              </button>
+            )}
+            <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{display:'none'}}/>
+          </div>
           {editingUsername ? (
             <div style={{display:'flex', alignItems:'center', gap:8, justifyContent:'center', marginTop:4}}>
               <input type="text" value={usernameInput}
@@ -3343,31 +3384,84 @@ function RoadLearn() {
           </div>
         </div>
 
-        {/* Paramètres */}
-        <div style={{fontSize:11, fontWeight:700, color: dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{(L_PROFILE[lang]||L_PROFILE.fr).settings}</div>
-
-        {/* Toggle thème dans les paramètres */}
-        <div style={{margin:'0 16px 8px', padding:'12px 14px', borderRadius:14, border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`, display:'flex', alignItems:'center', justifyContent:'space-between', background: dark?'#161616':'#f9fafb'}}>
-          <div style={{display:'flex', alignItems:'center', gap:8}}>
-            {dark ? <Moon size={15} style={{color:'#6b7280'}}/> : <Sun size={15} style={{color:'#6b7280'}}/>}
-            <span style={{fontSize:13, fontWeight:500, color: dark?'#d1d5db':'#374151'}}>{(L_PROFILE[lang]||L_PROFILE.fr).theme} {dark?(L_PROFILE[lang]||L_PROFILE.fr).dark:(L_PROFILE[lang]||L_PROFILE.fr).light}</span>
+        {/* ── Langue ──────────────────────────────────────────────────────── */}
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{t.settings.lang}</div>
+        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#161616':'#f9fafb', border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,padding:12}}>
+            {[{code:'fr',flag:'🇫🇷',name:'Français'},{code:'en',flag:'🇬🇧',name:'English'},{code:'es',flag:'🇪🇸',name:'Español'},{code:'pt',flag:'🇧🇷',name:'Português'},{code:'de',flag:'🇩🇪',name:'Deutsch'},{code:'it',flag:'🇮🇹',name:'Italiano'},{code:'nl',flag:'🇳🇱',name:'Nederlands'},{code:'ja',flag:'🇯🇵',name:'日本語'}].map(({code,flag,name})=>(
+              <button key={code} onClick={()=>changeLang(code)} style={{padding:'8px 4px',borderRadius:12,fontSize:11,fontWeight:600,cursor:'pointer',textAlign:'center',
+                background:lang===code?'#3b82f6':(dark?'#0f0f0f':'white'),color:lang===code?'#fff':(dark?'#f9fafb':'#111827'),border:`1.5px solid ${lang===code?'#3b82f6':(dark?'#2a2a2a':'#e5e7eb')}`}}>
+                <div style={{fontSize:18}}>{flag}</div>
+                <div style={{marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{name}</div>
+              </button>
+            ))}
           </div>
-          <button onClick={toggleTheme} style={{
-            width:44, height:24, borderRadius:99, cursor:'pointer',
-            background: dark?'#3b82f6':'#d1d5db',
-            border:'none', position:'relative', transition:'background 0.3s'
-          }}>
-            <div style={{
-              width:18, height:18, borderRadius:'50%', background:'white',
-              position:'absolute', top:3, transition:'left 0.3s',
-              left: dark?22:3, boxShadow:'0 1px 3px rgba(0,0,0,0.3)'
-            }}/>
-          </button>
         </div>
 
-        {/* ── Google Sign-In ─────────────────────────────────────────────── */}
-        <div style={{margin:'0 16px', padding:'12px 14px', borderRadius:14, border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`, marginBottom:20, background:dark?'#161616':'#f9fafb'}}>
-          <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.06em', marginBottom:8}}>{t.home?.googleAccount||'COMPTE GOOGLE'}</div>
+        {/* ── Apparence ───────────────────────────────────────────────────── */}
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{t.settings.appearance}</div>
+        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#161616':'#f9fafb', border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderBottom:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
+            <div style={{fontSize:14,color:dark?'#f9fafb':'#111827'}}>{t.settings.darkMode}</div>
+            <div onClick={toggleTheme} style={{width:44,height:26,borderRadius:13,position:'relative',cursor:'pointer',flexShrink:0,background:dark?'#3b82f6':'#d1d5db',transition:'background 0.2s'}}>
+              <div style={{position:'absolute',top:3,left:dark?21:3,width:20,height:20,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,.3)',transition:'left 0.2s'}}/>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px'}}>
+            <div>
+              <div style={{fontSize:14,color:dark?'#f9fafb':'#111827'}}>{TTS_SPEED_LABEL[lang]||'Vitesse TTS'}</div>
+              <div style={{fontSize:12,color:dark?'#9ca3af':'#6b7280',marginTop:2}}>{TTS_SPEED_SUB[lang]||'Vitesse de la synthèse vocale'}</div>
+            </div>
+            <div style={{display:'flex',gap:4}}>
+              {[{v:0.65,l:'0.75×'},{v:0.9,l:'1×'},{v:1.15,l:'1.25×'},{v:1.4,l:'1.5×'}].map(({v,l})=>(
+                <button key={v} onClick={()=>changeTtsSpeed(v)} style={{padding:'4px 8px',borderRadius:8,fontSize:11,fontWeight:600,cursor:'pointer',
+                  border:`1.5px solid ${ttsSpeed===v?'#3b82f6':(dark?'#2a2a2a':'#e5e7eb')}`,
+                  background:ttsSpeed===v?'#3b82f6':(dark?'#0f0f0f':'white'),
+                  color:ttsSpeed===v?'white':(dark?'#f9fafb':'#111827')}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Notifications ───────────────────────────────────────────────── */}
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{t.settings.notifications}</div>
+        <div style={{margin:'0 16px 16px', borderRadius:16, overflow:'hidden', background:dark?'#161616':'#f9fafb', border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
+          {notifPerm!=='granted'&&(
+            <div style={{padding:'12px 16px',borderBottom:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
+              <button onClick={requestNotifPerm} style={{width:'100%',padding:10,borderRadius:12,fontSize:14,fontWeight:600,cursor:'pointer',background:'#3b82f6',color:'#fff',border:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                🔔 {t.settings.notifPerm}
+              </button>
+            </div>
+          )}
+          {[
+            {label:t.settings.notifGlobal,sublabel:notifPerm!=='granted'?(t.settings?.notifRequired||'⚠️ Permission requise'):null,val:notifSettings.global&&notifPerm==='granted',dis:notifPerm!=='granted',onChange:v=>saveNotif({...notifSettings,global:v})},
+            {label:t.settings.notifLesson,val:notifSettings.global&&notifSettings.lesson,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,lesson:v})},
+            {label:t.settings.notifStreak,val:notifSettings.global&&notifSettings.streak,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,streak:v})},
+            {label:t.settings.notifLb,val:notifSettings.global&&notifSettings.lb,dis:!notifSettings.global,onChange:v=>saveNotif({...notifSettings,lb:v})},
+          ].map((r,i,arr)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderBottom:i<arr.length-1?`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`:'none'}}>
+              <div style={{flex:1,paddingRight:12}}>
+                <div style={{fontSize:14,color:dark?'#f9fafb':'#111827'}}>{r.label}</div>
+                {r.sublabel&&<div style={{fontSize:12,color:dark?'#9ca3af':'#6b7280',marginTop:2}}>{r.sublabel}</div>}
+              </div>
+              <div onClick={()=>!r.dis&&r.onChange(!r.val)} style={{width:44,height:26,borderRadius:13,position:'relative',cursor:r.dis?'not-allowed':'pointer',flexShrink:0,background:r.val?'#3b82f6':(dark?'#2a2a2a':'#d1d5db'),transition:'background 0.2s',opacity:r.dis?0.4:1}}>
+                <div style={{position:'absolute',top:3,left:r.val?21:3,width:20,height:20,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,.3)',transition:'left 0.2s'}}/>
+              </div>
+            </div>
+          ))}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderTop:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`}}>
+            <div style={{fontSize:14,color:dark?'#f9fafb':'#111827'}}>{t.settings.notifTime}</div>
+            <input type="time" value={notifSettings.time} disabled={!notifSettings.global}
+              onChange={e=>saveNotif({...notifSettings,time:e.target.value})}
+              style={{background:dark?'#0f0f0f':'white',color:dark?'#f9fafb':'#111827',border:`1px solid ${dark?'#2a2a2a':'#e5e7eb'}`,borderRadius:8,padding:'4px 8px',fontSize:13,opacity:notifSettings.global?1:0.4}}/>
+          </div>
+        </div>
+
+        {/* ── Compte Google ────────────────────────────────────────────────── */}
+        <div style={{fontSize:11, fontWeight:700, color:dark?'#6b7280':'#9ca3af', letterSpacing:'0.08em', padding:'0 16px', marginBottom:8}}>{t.home?.googleAccount||'COMPTE GOOGLE'}</div>
+        <div style={{margin:'0 16px 16px', padding:'12px 14px', borderRadius:14, border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`, background:dark?'#161616':'#f9fafb'}}>
           {googleUser ? (
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
               <div style={{display:'flex', alignItems:'center', gap:8}}>
@@ -3386,6 +3480,8 @@ function RoadLearn() {
             </button>
           )}
         </div>
+
+        <div style={{textAlign:'center',fontSize:12,color:dark?'#4b5563':'#9ca3af',paddingBottom:20}}>RoadLearn · {t.settings.version} 2.0 · 🏅 {state.bestStreak||1}</div>
       </div>
       <BottomNav active="profile"/>
     </PhoneFrame>
@@ -3810,108 +3906,6 @@ function RoadLearn() {
     );
   }
 
-  // ── Écran paramètres ─────────────────────────────────────────────────────
-  if (screen === "settings") {
-    const bg2pwa = dark ? '#161616' : '#f9fafb';
-    const borderPwa = dark ? '#2a2a2a' : '#e5e7eb';
-    const txtPwa = dark ? '#f9fafb' : '#111827';
-    const txt2pwa = dark ? '#9ca3af' : '#6b7280';
-    const bgPwa = dark ? '#0f0f0f' : '#ffffff';
-
-    const Toggle = ({value,onChange,disabled}) => (
-      <div onClick={()=>!disabled&&onChange(!value)} style={{
-        width:44,height:26,borderRadius:13,position:'relative',cursor:disabled?'not-allowed':'pointer',
-        flexShrink:0,background:value?'#3b82f6':(dark?'#2a2a2a':'#d1d5db'),
-        transition:'background 0.2s',opacity:disabled?0.4:1,
-      }}>
-        <div style={{position:'absolute',top:3,left:value?21:3,width:20,height:20,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,.3)',transition:'left 0.2s'}}/>
-      </div>
-    );
-    const Section = ({title,children}) => (
-      <div style={{marginBottom:20}}>
-        <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',color:txt2pwa,marginBottom:6,paddingLeft:4}}>{title}</div>
-        <div style={{borderRadius:16,overflow:'hidden',background:bg2pwa,border:`1px solid ${borderPwa}`}}>{children}</div>
-      </div>
-    );
-    const Row = ({label,sublabel,right,last}) => (
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderBottom:last?'none':`1px solid ${borderPwa}`}}>
-        <div style={{flex:1,paddingRight:12}}>
-          <div style={{fontSize:14,color:txtPwa}}>{label}</div>
-          {sublabel&&<div style={{fontSize:12,color:txt2pwa,marginTop:2}}>{sublabel}</div>}
-        </div>
-        {right}
-      </div>
-    );
-    const LANGS=[
-      {code:'fr',flag:'🇫🇷',name:'Français'},{code:'en',flag:'🇬🇧',name:'English'},
-      {code:'es',flag:'🇪🇸',name:'Español'},{code:'pt',flag:'🇧🇷',name:'Português'},
-      {code:'de',flag:'🇩🇪',name:'Deutsch'},{code:'it',flag:'🇮🇹',name:'Italiano'},
-      {code:'nl',flag:'🇳🇱',name:'Nederlands'},{code:'ja',flag:'🇯🇵',name:'日本語'},
-    ];
-    return (
-      <PhoneFrame>
-        <div style={{padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,borderBottom:`1px solid ${borderPwa}`}}>
-          <div style={{fontSize:18,fontWeight:700,color:txtPwa}}>{t.settings.title}</div>
-          <button onClick={toggleTheme} style={{padding:8,borderRadius:12,background:dark?'#161616':'#f3f4f6',border:'none',cursor:'pointer',color:dark?'#9ca3af':'#6b7280'}}>
-            {dark?<Sun size={17}/>:<Moon size={17}/>}
-          </button>
-        </div>
-        <div style={{flex:1,overflowY:'auto',padding:'16px'}}>
-          <Section title={t.settings.lang}>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,padding:12}}>
-              {LANGS.map(({code,flag,name})=>(
-                <button key={code} onClick={()=>changeLang(code)} style={{padding:'8px 4px',borderRadius:12,fontSize:11,fontWeight:600,cursor:'pointer',textAlign:'center',
-                  background:lang===code?'#3b82f6':bgPwa,color:lang===code?'#fff':txtPwa,border:`1.5px solid ${lang===code?'#3b82f6':borderPwa}`}}>
-                  <div style={{fontSize:18}}>{flag}</div>
-                  <div style={{marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{name}</div>
-                </button>
-              ))}
-            </div>
-          </Section>
-          <Section title={t.settings.appearance}>
-            <Row label={t.settings.darkMode} right={<Toggle value={dark} onChange={toggleTheme}/>}/>
-            <Row label={TTS_SPEED_LABEL[lang]||'Vitesse lecture TTS'} last sublabel={TTS_SPEED_SUB[lang]||'Vitesse de la synthèse vocale'} right={
-              <div style={{display:'flex', gap:4}}>
-                {[{v:0.65,l:'0.75×'},{v:0.9,l:'1×'},{v:1.15,l:'1.25×'},{v:1.4,l:'1.5×'}].map(({v,l})=>(
-                  <button key={v} onClick={()=>changeTtsSpeed(v)}
-                    style={{padding:'4px 8px', borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer',
-                      border:`1.5px solid ${ttsSpeed===v?'#3b82f6':(dark?'#2a2a2a':'#e5e7eb')}`,
-                      background:ttsSpeed===v?'#3b82f6':(dark?bgPwa:bgPwa),
-                      color:ttsSpeed===v?'white':txtPwa}}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-            }/>
-          </Section>
-          <Section title={t.settings.notifications}>
-            {notifPerm!=='granted'&&(
-              <div style={{padding:'12px 16px',borderBottom:`1px solid ${borderPwa}`}}>
-                <button onClick={requestNotifPerm} style={{width:'100%',padding:10,borderRadius:12,fontSize:14,fontWeight:600,cursor:'pointer',background:'#3b82f6',color:'#fff',border:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-                  🔔 {t.settings.notifPerm}
-                </button>
-              </div>
-            )}
-            <Row label={t.settings.notifGlobal} sublabel={notifPerm!=='granted'?(t.settings?.notifRequired||'⚠️ Permission requise'):null}
-              right={<Toggle value={notifSettings.global&&notifPerm==='granted'} disabled={notifPerm!=='granted'} onChange={v=>saveNotif({...notifSettings,global:v})}/>}/>
-            <Row label={t.settings.notifLesson}
-              right={<Toggle value={notifSettings.global&&notifSettings.lesson} disabled={!notifSettings.global} onChange={v=>saveNotif({...notifSettings,lesson:v})}/>}/>
-            <Row label={t.settings.notifStreak}
-              right={<Toggle value={notifSettings.global&&notifSettings.streak} disabled={!notifSettings.global} onChange={v=>saveNotif({...notifSettings,streak:v})}/>}/>
-            <Row label={t.settings.notifLb}
-              right={<Toggle value={notifSettings.global&&notifSettings.lb} disabled={!notifSettings.global} onChange={v=>saveNotif({...notifSettings,lb:v})}/>}/>
-            <Row label={t.settings.notifTime} last right={
-              <input type="time" value={notifSettings.time} disabled={!notifSettings.global}
-                onChange={e=>saveNotif({...notifSettings,time:e.target.value})}
-                style={{background:bgPwa,color:txtPwa,border:`1px solid ${borderPwa}`,borderRadius:8,padding:'4px 8px',fontSize:13,opacity:notifSettings.global?1:0.4}}/>
-            }/>
-          </Section>
-          <div style={{textAlign:'center',fontSize:12,color:txt2pwa,paddingBottom:16}}>RoadLearn · {t.settings.version} 2.0 · Best streak: {state.bestStreak||1}🏅</div>
-        </div>
-        <BottomNav active="settings"/>
-      </PhoneFrame>
-    );
-  }
 
   return null;
 }
