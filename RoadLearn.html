@@ -65,20 +65,21 @@
 
   *, *::before, *::after { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
   html { transition: background-color 0.25s ease; }
-  body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; background: var(--color-bg); color: var(--color-text); }
+  body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; background: var(--color-bg); color: var(--color-text); }
   @media (max-width: 480px) {
     .phone-wrap { padding: 0 !important; }
     .phone-frame { border-radius: 0 !important; max-height: 100vh !important; min-height: 100vh !important; box-shadow: none !important; }
   }
   input, button, select, textarea { -webkit-appearance: none; font-family: inherit; }
-  button { cursor: pointer; }
+  /* touch-action: manipulation supprime le délai 300ms sur mobile */
+  button, a { touch-action: manipulation; -webkit-touch-callout: none; cursor: pointer; }
 
   /* ── Animations ─────────────────────────────── */
   .animate-spin { animation: spin 1s linear infinite; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
   .fade-in { animation: fadeIn 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 
   .slide-up { animation: slideUp 0.28s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
   @keyframes slideUp { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
@@ -89,9 +90,19 @@
   .pulse-once { animation: pulseOnce 0.5s ease; }
   @keyframes pulseOnce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
 
+  /* ── Entrée d'écran ─────────────────────────── */
+  .screen-in { animation: screenIn 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+  @keyframes screenIn { from { opacity:0; transform:translateX(10px); } to { opacity:1; transform:translateX(0); } }
+
   /* ── Transitions globales ───────────────────── */
   button, a, input { transition: all 0.15s ease; }
-  button:active:not(:disabled) { transform: scale(0.95); opacity: 0.88; }
+  /* Feedback tactile naturel : scale subtil + légère opacité */
+  button:active:not(:disabled) { transform: scale(0.96); opacity: 0.9; }
+
+  /* ── Scroll containers ──────────────────────── */
+  .scroll-y { overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+  .scroll-x { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; }
+  .snap-start { scroll-snap-align: start; }
 
   /* ── Scrollbar ──────────────────────────────── */
   ::-webkit-scrollbar { width: 3px; }
@@ -99,9 +110,15 @@
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
   .dark ::-webkit-scrollbar-thumb { background: #3f3f46; }
 
-  /* ── Card hover effect ──────────────────────── */
+  /* ── Card hover / press effects ────────────── */
   .card-hover { transition: transform 0.18s ease, box-shadow 0.18s ease; }
   .card-hover:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .card-hover:active { transform: scale(0.985) !important; }
+
+  /* ── Reduced motion ─────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
 
   /* ── Glass effect ───────────────────────────── */
   .glass { backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); }
@@ -113,7 +130,19 @@
   input:focus { outline: none; }
   input:focus-visible { box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
 
-  /* ── Bottom nav indicator ───────────────────── */
+  /* ── Bottom nav ─────────────────────────────── */
+  /* Pill background pour l'onglet actif */
+  .nav-pill {
+    position: absolute; inset: 4px 6px;
+    border-radius: 14px;
+    animation: navPillIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+    pointer-events: none;
+  }
+  @keyframes navPillIn {
+    from { opacity: 0; transform: scale(0.75); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  /* Indicateur top conservé en fallback (non utilisé) */
   .nav-indicator {
     position: absolute; top: 0; left: 50%;
     width: 20px; height: 3px; border-radius: 0 0 3px 3px;
@@ -123,6 +152,12 @@
   @keyframes navIn {
     from { opacity: 0; transform: translateX(-50%) translateY(4px); }
     to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  /* ── Progress dots exercices ─────────────────── */
+  .ex-dot {
+    height: 6px; border-radius: 99px;
+    transition: width 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease, opacity 0.3s ease;
   }
 
   /* ── Section label ──────────────────────────── */
@@ -3367,7 +3402,8 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
       background:dark?'rgba(9,9,11,0.97)':'rgba(255,255,255,0.97)',
       backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
       display:'flex',flexShrink:0,
-      paddingBottom:'env(safe-area-inset-bottom,0px)'
+      paddingBottom:'env(safe-area-inset-bottom,0px)',
+      paddingLeft:4, paddingRight:4, paddingTop:4,
     }}>
       {[
         {id:"home",      icon:Home,          label:t.nav.home},
@@ -3379,10 +3415,25 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         const isActive = active===id;
         return (
           <button key={id} onClick={()=>navTo(id)}
-            style={{flex:1,paddingTop:10,paddingBottom:8,display:'flex',flexDirection:'column',alignItems:'center',gap:3,color:isActive?'#6366f1':dark?'#52525b':'#a8a8b3',background:'none',border:'none',cursor:'pointer',position:'relative'}}>
-            {isActive && <span className="nav-indicator"/>}
-            <Ic size={20}/>
-            <span style={{fontSize:10,fontWeight:isActive?600:400,letterSpacing:0.1}}>{label}</span>
+            style={{
+              flex:1, paddingTop:8, paddingBottom:7,
+              display:'flex', flexDirection:'column', alignItems:'center', gap:2,
+              color: isActive ? '#6366f1' : dark ? '#52525b' : '#9ca3af',
+              background:'none', border:'none', cursor:'pointer', position:'relative',
+              borderRadius:14, minHeight:50,
+              transition:'color 0.2s ease'
+            }}>
+            {/* Pill background actif — style Notion/Linear */}
+            {isActive && (
+              <span className="nav-pill" style={{
+                background: dark ? 'rgba(99,102,241,0.14)' : 'rgba(99,102,241,0.09)',
+              }}/>
+            )}
+            <Ic size={21}/>
+            <span style={{
+              fontSize:10, fontWeight:isActive?700:400, letterSpacing:0.1,
+              position:'relative', lineHeight:1.2
+            }}>{label}</span>
           </button>
         );
       })}
@@ -3483,9 +3534,19 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         </div>
       </div>
 
-      <div style={{flex:1, overflowY:'auto'}}>
+      <div className='scroll-y' style={{flex:1, overflowY:'auto'}} className="scroll-y">
+        {/* Greeting heure du jour */}
+        {(()=>{
+          const h=new Date().getHours();
+          const greet = h<5?'🌙 Bonne nuit':h<12?'☀️ Bonjour':h<17?'👋 Bon après-midi':'🌙 Bonsoir';
+          return (
+            <div style={{padding:'12px 16px 0', fontSize:13, color:dark?'#71717a':'#9ca3af', fontWeight:400}}>
+              {greet}, <span style={{fontWeight:700, color:dark?'#e4e4e7':'#1e293b'}}>{username}</span> !
+            </div>
+          );
+        })()}
         {/* Profil + niveau */}
-        <div style={{margin:'12px 16px', padding:'16px', borderRadius:20,
+        <div style={{margin:'8px 16px 12px', padding:'16px', borderRadius:20,
           background: dark?'linear-gradient(135deg,#18183a,#1e1b4b)':'linear-gradient(135deg,#eef2ff,#f0f9ff)',
           border:`1px solid ${dark?'#2d2a6a':'#c7d2fe'}`,
           boxShadow: dark?'0 4px 20px rgba(99,102,241,0.1)':'0 4px 20px rgba(99,102,241,0.08)'}}>
@@ -3531,18 +3592,19 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
 
         {/* Stats */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, padding:'0 16px', marginBottom:16}}>
-          {[{v:state.xp,l:t.home?.xpTotal||'XP totaux',icon:'⚡',c:dark?'rgba(99,102,241,0.12)':'#eef2ff',tc:dark?'#a5b4fc':'#4f46e5'},
-            {v:state.lvlDone,l:(L_PROFILE[lang]||L_PROFILE.fr).levels,icon:'✅',c:dark?'rgba(5,150,105,0.12)':'#f0fdf4',tc:dark?'#6ee7b7':'#059669'},
-            {v:`${state.streak}`,l:t.home?.days||'Jours',icon:'🔥',c:dark?'rgba(245,158,11,0.12)':'#fef9e7',tc:dark?'#fbbf24':'#b45309'}
+          {[{v:state.xp,l:t.home?.xpTotal||'XP totaux',icon:'⚡',c:dark?'rgba(99,102,241,0.12)':'#eef2ff',tc:dark?'#a5b4fc':'#4f46e5',bd:dark?'rgba(99,102,241,0.15)':'#e0e7ff'},
+            {v:state.lvlDone,l:(L_PROFILE[lang]||L_PROFILE.fr).levels,icon:'✅',c:dark?'rgba(5,150,105,0.12)':'#f0fdf4',tc:dark?'#6ee7b7':'#059669',bd:dark?'rgba(5,150,105,0.2)':'#d1fae5'},
+            {v:`${state.streak}`,l:t.home?.days||'Jours',icon:'🔥',c:dark?'rgba(245,158,11,0.12)':'#fef9e7',tc:dark?'#fbbf24':'#b45309',bd:dark?'rgba(245,158,11,0.2)':'#fde68a'}
           ].map((s,i)=>(
-            <div key={i} style={{
+            <div key={i} className="card-hover" style={{
               background: s.c,
-              border:`1px solid ${dark?'#27272a':'#f1f5f9'}`,
-              borderRadius:16, padding:'12px 6px', textAlign:'center'
+              border:`1px solid ${s.bd}`,
+              borderRadius:16, padding:'14px 6px', textAlign:'center',
+              boxShadow: dark?'none':`0 2px 8px ${s.bd}`
             }}>
-              <div style={{fontSize:20, marginBottom:3}}>{s.icon}</div>
-              <div style={{fontSize:18, fontWeight:800, color: s.tc, letterSpacing:-0.5}}>{s.v}</div>
-              <div style={{fontSize:10, color: dark?'#52525b':'#94a3b8', marginTop:3, fontWeight:500}}>{s.l}</div>
+              <div style={{fontSize:22, marginBottom:4}}>{s.icon}</div>
+              <div style={{fontSize:19, fontWeight:800, color: s.tc, letterSpacing:-0.5, lineHeight:1}}>{s.v}</div>
+              <div style={{fontSize:10, color: dark?'#52525b':'#94a3b8', marginTop:4, fontWeight:500}}>{s.l}</div>
             </div>
           ))}
         </div>
@@ -3703,10 +3765,10 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                   textAlign:'left', cursor:'pointer', boxShadow: dark?'none':'0 1px 4px rgba(0,0,0,0.04)'
                 }}>
                 <div style={{
-                  width:44, height:44, borderRadius:14, flexShrink:0,
-                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:22,
-                  background: dark?'#0f0f0f':'#f9fafb',
-                  border:`1px solid ${dark?'#2a2a2a':'#f3f4f6'}`
+                  width:46, height:46, borderRadius:15, flexShrink:0,
+                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:23,
+                  background: dark ? `${prog}18` : `${prog}12`,
+                  border:`1px solid ${dark?`${prog}20`:`${prog}18`}`
                 }}>{rm.icon}</div>
                 <div style={{flex:1, minWidth:0}}>
                   <div style={{display:'flex', alignItems:'center', gap:6, marginBottom:2}}>
@@ -3743,7 +3805,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             {dark?'☀️':'🌙'}
           </button>
         </div>
-        <div style={{flex:1, overflowY:'auto', padding:'12px 16px 16px'}}>
+        <div className='scroll-y' style={{flex:1, overflowY:'auto', padding:'12px 16px 16px'}}>
           {sorted.map((u,i) => (
             <div key={i} style={{
               display:'flex', alignItems:'center', gap:10,
@@ -3792,7 +3854,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             {dark?'☀️':'🌙'}
           </button>
         </div>
-        <div style={{flex:1, overflowY:'auto'}}>
+        <div className='scroll-y' style={{flex:1, overflowY:'auto'}}>
           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, padding:'12px 16px 20px'}}>
             {BADGES.map((b,i)=>{
               const ok = b.check(state);
@@ -3832,7 +3894,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
           {dark?'☀️':'🌙'}
         </button>
       </div>
-      <div style={{flex:1, overflowY:'auto'}}>
+      <div className='scroll-y' style={{flex:1, overflowY:'auto'}}>
         {/* Avatar + nom */}
         <div style={{padding:'20px 16px 12px', textAlign:'center'}}>
           <div style={{position:'relative', width:78, margin:'0 auto 14px'}}>
@@ -4143,7 +4205,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
           <div style={{fontSize:11, color: dark?'#6b7280':'#9ca3af', marginTop:4, fontWeight:500}}>{done}/{total} {(L_LESSON[lang]||L_LESSON.fr).levelsCompleted}</div>
         </div>
 
-        <div style={{flex:1, overflowY:'auto', padding:'0 16px 16px'}}>
+        <div className='scroll-y' style={{flex:1, overflowY:'auto', padding:'0 16px 16px'}}>
           {rm.sections.map((sec,si)=>(
             <div key={si} style={{marginBottom:16}}>
               <div style={{
@@ -4244,7 +4306,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
           </div>
         </div>
 
-        <div style={{flex:1, overflowY:'auto', padding:'16px'}}>
+        <div className='scroll-y' style={{flex:1, overflowY:'auto', padding:'16px'}}>
           {/* Chargement */}
           {loading && (
             <div style={{textAlign:'center', padding:'48px 0'}}>
@@ -4445,7 +4507,7 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
     return (
       <PhoneFrame>
         {confetti && <ConfettiOverlay/>}
-        <div style={{flex:1, overflowY:'auto', padding:'20px 20px 24px', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center'}}>
+        <div className='scroll-y' style={{flex:1, overflowY:'auto', padding:'20px 20px 24px', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center'}}>
           {/* Emoji animé */}
           <div className="bounce-in" style={{fontSize:72, marginBottom:12, lineHeight:1, marginTop:8}}>{resultEmoji}</div>
           <div style={{fontSize:22, fontWeight:700, marginBottom:6, color: dark?'#f9fafb':'#111827'}}>{resultTitle}</div>
@@ -4628,11 +4690,17 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
             </div>
             <div style={{fontSize:12, fontWeight:600, color:catColor, background:dark?'rgba(99,102,241,0.1)':'#eef2ff', padding:'4px 10px', borderRadius:99}}>{exScore} ✓</div>
           </div>
-          {/* Progress bar */}
-          <div style={{height:3, background:dark?'#1c1c1f':'#f0f0f5'}}>
-            <div style={{height:'100%', width:`${((exQIdx)/totalQ)*100}%`, background:catColor, borderRadius:99, transition:'width 0.4s ease'}}/>
+          {/* Progress dots — style Duolingo */}
+          <div style={{display:'flex', justifyContent:'center', alignItems:'center', gap:5, padding:'8px 16px 4px'}}>
+            {activeEx.questions.map((_,i)=>(
+              <div key={i} className="ex-dot" style={{
+                width: i===exQIdx ? 22 : 7,
+                background: i<exQIdx ? catColor : i===exQIdx ? catColor : dark?'#27272a':'#e5e7eb',
+                opacity: i<exQIdx ? 0.45 : 1,
+              }}/>
+            ))}
           </div>
-          <div style={{flex:1, overflowY:'auto', padding:'20px 16px'}}>
+          <div className='scroll-y' style={{flex:1, overflowY:'auto', padding:'20px 16px'}}>
             {/* Question */}
             <div className="slide-up" style={{background:dark?'#1a1a1e':'#f8fafc', borderRadius:16, padding:'18px 16px', marginBottom:18, border:`1.5px solid ${dark?'#27272a':'#e2e8f0'}`}}>
               <div style={{fontSize:11, fontWeight:700, color:catColor, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8}}>{cats.find(c=>c.id===exCat)?.label}</div>
@@ -4650,16 +4718,25 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
                 }
                 return (
                   <button key={i} onClick={()=>handleExAnswer(i)} disabled={exAns !== null} style={{
-                    textAlign:'left', padding:'13px 15px', borderRadius:12,
+                    textAlign:'left', padding:'14px 15px', borderRadius:14,
                     background:bg, border:`1.5px solid ${border}`, color, fontSize:13, fontWeight:500,
                     cursor:exAns!==null?'default':'pointer', lineHeight:1.45,
-                    display:'flex', alignItems:'flex-start', gap:10,
-                    transition:'all 0.2s ease'
+                    display:'flex', alignItems:'center', gap:11,
+                    transition:'all 0.18s ease',
+                    boxShadow: exAns===null ? (dark?'none':'0 1px 4px rgba(0,0,0,0.04)') : 'none',
+                    transform: exAns===null ? 'none' : undefined,
                   }}>
-                    <span style={{width:22, height:22, borderRadius:8, background:exAns!==null&&isCorrect?'#059669':exAns!==null&&isSelected&&!isCorrect?'#ef4444':dark?'#27272a':'#f1f5f9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, flexShrink:0, color:exAns!==null&&(isCorrect||isSelected)&&!isCorrect?'white':exAns!==null&&isCorrect?'white':dark?'#71717a':'#94a3b8'}}>
-                      {exAns!==null&&isCorrect?'✓':exAns!==null&&isSelected&&!isCorrect?'✗':String.fromCharCode(65+i)}
+                    <span style={{
+                      width:26, height:26, borderRadius:9, flexShrink:0,
+                      background: exAns!==null&&isCorrect?'#059669' : exAns!==null&&isSelected&&!isCorrect?'#ef4444' : dark?'#27272a':'#f1f5f9',
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      fontSize:12, fontWeight:800,
+                      color: exAns!==null&&(isCorrect||(isSelected&&!isCorrect))?'white' : dark?'#71717a':'#94a3b8',
+                      transition:'background 0.2s ease'
+                    }}>
+                      {exAns!==null&&isCorrect?'✓' : exAns!==null&&isSelected&&!isCorrect?'✗' : String.fromCharCode(65+i)}
                     </span>
-                    <span>{opt}</span>
+                    <span style={{flex:1}}>{opt}</span>
                   </button>
                 );
               })}
@@ -4690,25 +4767,59 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
       const alreadyDone = (state.exDoneIds||[]).includes(activeEx.id);
       const xpEarned = alreadyDone ? 0 : Math.round(activeEx.xp * (finalScore/total));
       const emoji = pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '💪';
+      const ringColor = pct>=80?'#059669':pct>=50?catColor:'#6366f1';
+      const r=46, circ=2*Math.PI*r, offset=circ-((pct/100)*circ);
       return (
         <PhoneFrame>
-          <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'32px 20px'}}>
-            <div className="bounce-in" style={{fontSize:64, marginBottom:16}}>{emoji}</div>
-            <div style={{fontSize:22, fontWeight:800, color:dark?'#fafafa':'#0f172a', marginBottom:6}}>{finalScore}/{total} bonnes réponses</div>
-            <div style={{fontSize:14, color:dark?'#a1a1aa':'#64748b', marginBottom:24}}>{pct}% de réussite</div>
+          <div className="scroll-y" style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 20px', overflowY:'auto'}}>
+            {/* Ring de progression SVG */}
+            <div className="bounce-in" style={{position:'relative', width:120, height:120, marginBottom:20}}>
+              <svg width="120" height="120" style={{transform:'rotate(-90deg)'}}>
+                <circle cx="60" cy="60" r={r} fill="none" stroke={dark?'#27272a':'#e5e7eb'} strokeWidth="9"/>
+                <circle cx="60" cy="60" r={r} fill="none"
+                  stroke={ringColor} strokeWidth="9"
+                  strokeLinecap="round"
+                  strokeDasharray={circ}
+                  strokeDashoffset={offset}
+                  style={{transition:'stroke-dashoffset 0.9s cubic-bezier(0.25,0.46,0.45,0.94)'}}
+                />
+              </svg>
+              <div style={{position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
+                <div style={{fontSize:32, lineHeight:1}}>{emoji}</div>
+                <div style={{fontSize:15, fontWeight:800, color:ringColor, lineHeight:1.1, marginTop:2}}>{pct}%</div>
+              </div>
+            </div>
+            <div style={{fontSize:21, fontWeight:800, color:dark?'#fafafa':'#0f172a', marginBottom:5, letterSpacing:-0.5}}>{finalScore}/{total} bonnes réponses</div>
+            <div style={{fontSize:13, color:dark?'#71717a':'#9ca3af', marginBottom:22}}>
+              {pct>=80?'Excellent ! Tu maîtrises ce sujet 🌟':pct>=50?'Bien joué, continue comme ça 👍':'Encore un peu d\'entraînement 💪'}
+            </div>
             {xpEarned > 0 && (
-              <div className="slide-up" style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', borderRadius:14, padding:'14px 24px', marginBottom:20, color:'white', fontSize:16, fontWeight:700}}>
+              <div className="slide-up" style={{
+                background:'linear-gradient(135deg,#6366f1,#8b5cf6)', borderRadius:16,
+                padding:'13px 28px', marginBottom:18, color:'white', fontSize:16, fontWeight:700,
+                boxShadow:'0 8px 24px rgba(99,102,241,0.35)'
+              }}>
                 +{xpEarned} XP gagnés ! 🎉
               </div>
             )}
-            {alreadyDone && (
-              <div style={{fontSize:12, color:dark?'#52525b':'#94a3b8', marginBottom:20}}>Exercice déjà complété · XP non recumulables</div>
+            {alreadyDone && !xpEarned && (
+              <div style={{fontSize:12, color:dark?'#52525b':'#94a3b8', marginBottom:18, display:'flex', alignItems:'center', gap:5}}>
+                <span>✓</span> Exercice déjà complété
+              </div>
             )}
             <div style={{display:'flex', flexDirection:'column', gap:10, width:'100%'}}>
-              <button onClick={()=>startEx(activeEx)} style={{width:'100%', background:'linear-gradient(135deg,#3b82f6,#6366f1)', color:'white', borderRadius:12, padding:'13px', fontSize:14, fontWeight:600, border:'none', cursor:'pointer'}}>
-                Recommencer l'exercice
+              <button onClick={()=>startEx(activeEx)} style={{
+                width:'100%', background:'linear-gradient(135deg,#3b82f6,#6366f1)',
+                color:'white', borderRadius:14, padding:'14px', fontSize:14, fontWeight:700,
+                border:'none', cursor:'pointer', boxShadow:'0 6px 18px rgba(59,130,246,0.3)'
+              }}>
+                🔁 Recommencer l'exercice
               </button>
-              <button onClick={()=>{ setActiveEx(null); setExFinished(false); }} style={{width:'100%', background:dark?'#1a1a1e':'#f3f4f6', color:dark?'#d1d5db':'#374151', borderRadius:12, padding:'13px', fontSize:14, fontWeight:500, border:'none', cursor:'pointer'}}>
+              <button onClick={()=>{ setActiveEx(null); setExFinished(false); }} style={{
+                width:'100%', background:dark?'#1a1a1e':'#f3f4f6',
+                color:dark?'#d1d5db':'#374151', borderRadius:14, padding:'14px',
+                fontSize:14, fontWeight:500, border:`1px solid ${dark?'#27272a':'#e5e7eb'}`, cursor:'pointer'
+              }}>
                 ← Retour aux exercices
               </button>
             </div>
@@ -4725,56 +4836,63 @@ function changeLang(code) { setLang(code); try { localStorage.setItem('rl_lang',
         <div style={{padding:'14px 16px 12px', background:dark?'#111113':'#fff', borderBottom:`1px solid ${dark?'#1c1c1f':'#f0f0f5'}`, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
           <div>
             <div style={{fontSize:18, fontWeight:800, color:dark?'#fafafa':'#0f172a'}}>🧩 {t.nav.exercises}</div>
-            <div style={{fontSize:12, color:dark?'#71717a':'#94a3b8', marginTop:1}}>Mise en pratique · 3 catégories</div>
+            <div style={{fontSize:12, color:dark?'#71717a':'#94a3b8', marginTop:1}}>Mise en pratique · {cats.length} catégories · {Object.values(EXERCISES).flat().length} exercices</div>
           </div>
           <button onClick={()=>{ const m=themeMode==='dark'?'light':themeMode==='light'?'auto':'dark'; setThemeMode(m); try{localStorage.setItem('rl_theme',m);}catch(_){} }} style={{padding:7, borderRadius:10, background:dark?'#1a1a1e':'#f3f4f6', border:'none', cursor:'pointer', color:dark?'#d1d5db':'#6b7280'}}>
             {dark ? <Sun size={16}/> : <Moon size={16}/>}
           </button>
         </div>
-        <div style={{flex:1, overflowY:'auto', padding:'16px 16px 8px'}}>
+        <div className='scroll-y screen-in' style={{flex:1, overflowY:'auto', padding:'16px 16px 8px'}}>
           {/* Category tabs — scrollable */}
-          <div style={{display:'flex', gap:8, marginBottom:20, overflowX:'auto', paddingBottom:4, WebkitOverflowScrolling:'touch', scrollbarWidth:'none', msOverflowStyle:'none'}}>
+          <div style={{display:'flex', gap:7, marginBottom:18, overflowX:'auto', paddingBottom:4, WebkitOverflowScrolling:'touch', scrollbarWidth:'none', msOverflowStyle:'none', marginLeft:-2, paddingLeft:2}}>
             {cats.map(c => (
               <button key={c.id} onClick={()=>setExCat(c.id)} style={{
-                flexShrink:0, padding:'7px 12px', borderRadius:10, fontSize:11, fontWeight:600,
-                border:`1.5px solid ${exCat===c.id?c.color:dark?'#27272a':'#e2e8f0'}`,
-                background:exCat===c.id?(dark?`${c.color}22`:c.color+'15'):(dark?'#111113':'#f8fafc'),
-                color:exCat===c.id?c.color:(dark?'#71717a':'#94a3b8'),
-                cursor:'pointer', transition:'all 0.2s', whiteSpace:'nowrap'
+                flexShrink:0, padding:'8px 14px', borderRadius:12, fontSize:12, fontWeight:600,
+                border:`1.5px solid ${exCat===c.id?c.color:dark?'#27272a':'#e5e7eb'}`,
+                background: exCat===c.id ? c.color : (dark?'#111113':'#fff'),
+                color: exCat===c.id ? '#fff' : (dark?'#71717a':'#6b7280'),
+                cursor:'pointer', transition:'all 0.18s ease', whiteSpace:'nowrap',
+                boxShadow: exCat===c.id ? `0 4px 12px ${c.color}40` : 'none',
+                transform: exCat===c.id ? 'scale(1.03)' : 'scale(1)',
               }}>{c.label}</button>
             ))}
           </div>
           {/* Exercise cards */}
-          <div style={{display:'flex', flexDirection:'column', gap:12}}>
+          <div style={{display:'flex', flexDirection:'column', gap:10}}>
             {exList.map(ex => {
               const done = (state.exDoneIds||[]).includes(ex.id);
               const diff = ['','⭐','⭐⭐','⭐⭐⭐'][ex.difficulty]||'';
               return (
-                <button key={ex.id} onClick={()=>startEx(ex)} style={{
-                  textAlign:'left', padding:'16px', borderRadius:16,
-                  background:dark?'#161618':'#fff',
-                  border:`1.5px solid ${done?(dark?'rgba(5,150,105,0.3)':'#a7f3d0'):(dark?'#27272a':'#e2e8f0')}`,
-                  cursor:'pointer', boxShadow:dark?'none':'0 2px 8px rgba(0,0,0,0.04)'
+                <button key={ex.id} onClick={()=>startEx(ex)} className="card-hover" style={{
+                  textAlign:'left', padding:'14px 16px', borderRadius:16,
+                  background: done ? (dark?'rgba(5,150,105,0.06)':'#f0fdf4') : (dark?'#161618':'#fff'),
+                  border:`1.5px solid ${done?(dark?'rgba(5,150,105,0.25)':'#bbf7d0'):(dark?'#222224':'#eaedf1')}`,
+                  cursor:'pointer',
+                  boxShadow: dark ? 'none' : done ? '0 2px 8px rgba(5,150,105,0.08)' : '0 2px 8px rgba(0,0,0,0.04)'
                 }}>
                   <div style={{display:'flex', alignItems:'center', gap:12}}>
-                    <div style={{width:46, height:46, borderRadius:14, background:dark?'#1a1a1e':'#f8fafc', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0}}>
-                      {ex.icon}
+                    {/* Icon with colored bg matching category */}
+                    <div style={{
+                      width:48, height:48, borderRadius:15,
+                      background: done ? (dark?'rgba(5,150,105,0.15)':'#d1fae5') : (dark?`${catColor}18`:`${catColor}12`),
+                      border: `1px solid ${done?(dark?'rgba(5,150,105,0.2)':'#a7f3d0'):(dark?`${catColor}25`:`${catColor}20`)}`,
+                      display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0
+                    }}>
+                      {done ? '✅' : ex.icon}
                     </div>
                     <div style={{flex:1, minWidth:0}}>
-                      <div style={{display:'flex', alignItems:'center', gap:6, marginBottom:3}}>
-                        <span style={{fontSize:14, fontWeight:700, color:dark?'#fafafa':'#0f172a'}}>{ex.title}</span>
-                        {done && <span style={{fontSize:10, fontWeight:700, color:'#059669', background:dark?'rgba(5,150,105,0.1)':'#d1fae5', padding:'2px 7px', borderRadius:99}}>✓ Fait</span>}
+                      <div style={{display:'flex', alignItems:'center', gap:6, marginBottom:2}}>
+                        <span style={{fontSize:14, fontWeight:700, color: done?(dark?'#34d399':'#065f46'):(dark?'#fafafa':'#0f172a')}}>{ex.title}</span>
                       </div>
-                      <div style={{fontSize:12, color:dark?'#71717a':'#94a3b8', marginBottom:5}}>{ex.desc}</div>
-                      <div style={{display:'flex', alignItems:'center', gap:8}}>
-                        <span style={{fontSize:11, color:catColor, fontWeight:600}}>+{ex.xp} XP</span>
-                        <span style={{fontSize:11, color:dark?'#52525b':'#cbd5e1'}}>·</span>
-                        <span style={{fontSize:11, color:dark?'#52525b':'#94a3b8'}}>{diff}</span>
-                        <span style={{fontSize:11, color:dark?'#52525b':'#cbd5e1'}}>·</span>
-                        <span style={{fontSize:11, color:dark?'#52525b':'#94a3b8'}}>{ex.questions.length} questions</span>
+                      <div style={{fontSize:12, color:dark?'#71717a':'#94a3b8', marginBottom:6, lineHeight:1.4}}>{ex.desc}</div>
+                      <div style={{display:'flex', alignItems:'center', gap:6}}>
+                        <span style={{fontSize:11, color:catColor, fontWeight:700, background:dark?`${catColor}15`:`${catColor}12`, padding:'2px 7px', borderRadius:99}}>+{ex.xp} XP</span>
+                        <span style={{fontSize:11, color:dark?'#52525b':'#cbd5e1'}}>{diff}</span>
+                        <span style={{fontSize:11, color:dark?'#52525b':'#94a3b8'}}>{ex.questions.length}q</span>
+                        {done && <span style={{fontSize:11, color:'#059669', fontWeight:600, marginLeft:'auto'}}>✓ Complété</span>}
                       </div>
                     </div>
-                    <ChevronRight size={16} className="" style={{color:dark?'#52525b':'#cbd5e1', flexShrink:0}}/>
+                    <ChevronRight size={16} style={{color:dark?'#3f3f46':'#d1d5db', flexShrink:0}}/>
                   </div>
                 </button>
               );
